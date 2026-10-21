@@ -12,22 +12,29 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// Release signing is optional so that a fresh clone can configure and build.
+// Copy keystore.properties.example to keystore.properties (git-ignored) and point
+// storeFile at your own keystore to produce signed release builds.
 val keystorePropertiesFile: File = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
+val hasReleaseSigning: Boolean = keystoreProperties.getProperty("storeFile") != null
 
 android {
     namespace = "com.sweak.qralarm"
     compileSdk = 37
 
     signingConfigs {
-        create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storeFile = file(keystoreProperties["storeFile"] as String)
-            storePassword = keystoreProperties["storePassword"] as String
+        if (hasReleaseSigning) {
+            create("release") {
+                // file() resolves against the :app module directory, not the repository root
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = keystoreProperties.getProperty("storeFile")?.let { file(it) }
+                storePassword = keystoreProperties.getProperty("storePassword")
+            }
         }
     }
 
@@ -51,7 +58,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            // null when keystore.properties is absent: assembleRelease then yields an unsigned APK
+            signingConfig = signingConfigs.findByName("release")
         }
         debug {
             // Adds the en-XA (accented) and ar-XB (RTL) pseudolocales to the device language list
