@@ -110,7 +110,9 @@ fun MainNavContent(
             AlarmsChainSettingsScreen(
                 addEditAlarmViewModel = addEditAlarmViewModel,
                 onCancelClicked = { navigator.goBack() },
-                onRedirectToQRAlarmPro = { navigator.navigate(QRAlarmProRoute) }
+                onScanCustomCodeClicked = {
+                    navigator.navigate(CustomCodeScannerRoute(shouldScanForDefaultCode = false))
+                }
             )
         }
 
@@ -205,8 +207,7 @@ fun MainNavContent(
 
         entry<ThemeRoute> {
             ThemeScreen(
-                onBackClicked = { navigator.goBack() },
-                onGoToQRAlarmProCheckout = { navigator.navigate(QRAlarmProRoute) }
+                onBackClicked = { navigator.goBack() }
             )
         }
 

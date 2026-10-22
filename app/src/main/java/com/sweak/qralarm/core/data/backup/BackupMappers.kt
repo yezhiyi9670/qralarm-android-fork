@@ -3,21 +3,26 @@ package com.sweak.qralarm.core.data.backup
 import android.os.Build
 import com.sweak.qralarm.core.data.backup.dto.AlarmDto
 import com.sweak.qralarm.core.data.backup.dto.AppDto
+import com.sweak.qralarm.core.data.backup.dto.ChainedAlarmDto
 import com.sweak.qralarm.core.data.backup.dto.CodeDto
 import com.sweak.qralarm.core.data.backup.dto.IntRangeDto
 import com.sweak.qralarm.core.data.backup.dto.ManifestDto
 import com.sweak.qralarm.core.data.backup.dto.PreferencesDto
 import com.sweak.qralarm.core.domain.alarm.Alarm
 import com.sweak.qralarm.core.domain.backup.BackupAlarm
+import com.sweak.qralarm.core.domain.backup.BackupChainedAlarm
 import com.sweak.qralarm.core.domain.backup.BackupCode
 import com.sweak.qralarm.core.domain.backup.BackupMetadata
 import com.sweak.qralarm.core.domain.backup.BackupPreferences
 import com.sweak.qralarm.core.domain.user.model.Theme
 import com.sweak.qralarm.core.storage.database.model.AlarmEntity
+import com.sweak.qralarm.core.storage.database.model.ChainedAlarmEntity
 import com.sweak.qralarm.core.storage.database.model.CodeEntity
 import java.time.DayOfWeek
 
-fun AlarmEntity.toBackupAlarm(): BackupAlarm = BackupAlarm(
+fun AlarmEntity.toBackupAlarm(
+    chainedAlarms: List<ChainedAlarmEntity> = emptyList()
+): BackupAlarm = BackupAlarm(
     alarmId = alarmId,
     alarmHourOfDay = alarmHourOfDay,
     alarmMinute = alarmMinute,
@@ -36,7 +41,16 @@ fun AlarmEntity.toBackupAlarm(): BackupAlarm = BackupAlarm(
     isEmergencyTaskEnabled = isEmergencyTaskEnabled,
     alarmLabel = alarmLabel,
     gentleWakeUpDurationInSeconds = gentleWakeUpDurationInSeconds,
-    temporaryMuteDurationInSeconds = temporaryMuteDurationInSeconds
+    temporaryMuteDurationInSeconds = temporaryMuteDurationInSeconds,
+    chainedAlarms = chainedAlarms.map { chainedAlarm ->
+        BackupChainedAlarm(
+            chainedAlarmId = chainedAlarm.chainedAlarmId,
+            delayMinutes = chainedAlarm.delayMinutes,
+            assignedCodeId = chainedAlarm.assignedCodeId,
+            label = chainedAlarm.label,
+            order = chainedAlarm.order
+        )
+    }
 )
 
 fun CodeEntity.toBackupCode(): BackupCode = BackupCode(
@@ -123,7 +137,15 @@ fun BackupAlarm.toAlarmDto(): AlarmDto = AlarmDto(
     isEmergencyTaskEnabled = isEmergencyTaskEnabled,
     alarmLabel = alarmLabel,
     gentleWakeUpDurationInSeconds = gentleWakeUpDurationInSeconds,
-    temporaryMuteDurationInSeconds = temporaryMuteDurationInSeconds
+    temporaryMuteDurationInSeconds = temporaryMuteDurationInSeconds,
+    chainedAlarms = chainedAlarms.map { chainedAlarm ->
+        ChainedAlarmDto(
+            delayMinutes = chainedAlarm.delayMinutes,
+            assignedCodeId = chainedAlarm.assignedCodeId,
+            label = chainedAlarm.label,
+            order = chainedAlarm.order
+        )
+    }
 )
 
 fun AlarmDto.toBackupAlarm(): BackupAlarm = BackupAlarm(
@@ -151,7 +173,16 @@ fun AlarmDto.toBackupAlarm(): BackupAlarm = BackupAlarm(
     isEmergencyTaskEnabled = isEmergencyTaskEnabled,
     alarmLabel = alarmLabel,
     gentleWakeUpDurationInSeconds = gentleWakeUpDurationInSeconds,
-    temporaryMuteDurationInSeconds = temporaryMuteDurationInSeconds
+    temporaryMuteDurationInSeconds = temporaryMuteDurationInSeconds,
+    chainedAlarms = chainedAlarms.map { chainedAlarm ->
+        BackupChainedAlarm(
+            chainedAlarmId = 0,
+            delayMinutes = chainedAlarm.delayMinutes,
+            assignedCodeId = chainedAlarm.assignedCodeId,
+            label = chainedAlarm.label,
+            order = chainedAlarm.order
+        )
+    }
 )
 
 fun BackupCode.toCodeDto(): CodeDto = CodeDto(

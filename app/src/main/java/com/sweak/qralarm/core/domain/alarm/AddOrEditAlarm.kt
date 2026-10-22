@@ -12,12 +12,19 @@ class AddOrEditAlarm @Inject constructor(
 ) {
     suspend operator fun invoke(
         alarm: Alarm,
+        chainedAlarms: List<ChainedAlarm> = emptyList(),
         temporaryCustomRingtoneContentUriString: String? = null
     ): Result {
         val resolvedAlarm = alarm.copy(
             assignedCode = resolveCode(alarm.assignedCode)
         )
-        val alarmId = alarmsRepository.addOrEditAlarm(resolvedAlarm)
+        val resolvedChainedAlarms = chainedAlarms.map { chainedAlarm ->
+            chainedAlarm.copy(assignedCode = resolveCode(chainedAlarm.assignedCode))
+        }
+        val alarmId = alarmsRepository.addOrEditAlarm(
+            alarm = resolvedAlarm,
+            chainedAlarms = resolvedChainedAlarms
+        )
 
         codesRepository.cleanupUnreferencedCodes()
 

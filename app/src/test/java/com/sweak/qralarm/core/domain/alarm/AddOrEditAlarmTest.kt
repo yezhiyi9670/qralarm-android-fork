@@ -111,7 +111,7 @@ class AddOrEditAlarmTest {
 
         // Then
         coVerifyOrder {
-            alarmsRepository.addOrEditAlarm(any())
+            alarmsRepository.addOrEditAlarm(any(), any())
             codesRepository.cleanupUnreferencedCodes()
         }
     }

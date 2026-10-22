@@ -57,6 +57,7 @@ class SetAlarm @Inject constructor(
         }
 
         alarmsRepository.addOrEditAlarm(
+            chainedAlarms = alarm.chainedAlarms,
             alarm = alarm.copy(nextAlarmTimeInMillis = alarmTimeInMillis)
         )
 
@@ -64,7 +65,7 @@ class SetAlarm @Inject constructor(
         alarmScheduler.setAlarm(
             alarmId = alarmId,
             alarmTimeInMillis = alarmTimeInMillis,
-            isSnoozeAlarm = false
+            alarmType = AlarmType.REGULAR
         )
 
         if (!alarm.isAlarmEnabled) {
@@ -82,7 +83,7 @@ class SetAlarm @Inject constructor(
                     alarmId = alarmId,
                     alarmHourOfDay = alarm.alarmHourOfDay,
                     alarmMinute = alarm.alarmMinute,
-                    isSnoozeAlarm = false
+                    alarmType = AlarmType.REGULAR
                 )
             } else {
                 val upcomingAlarmNotificationTimeInMillis =

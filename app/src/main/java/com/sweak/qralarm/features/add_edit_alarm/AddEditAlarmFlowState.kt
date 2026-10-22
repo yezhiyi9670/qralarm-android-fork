@@ -12,8 +12,10 @@ import com.sweak.qralarm.core.domain.alarm.DEFAULT_CANCEL_LOCK_DURATION_IN_MINUT
 import com.sweak.qralarm.core.domain.alarm.DEFAULT_GENTLE_WAKE_UP_DURATION_IN_SECONDS
 import com.sweak.qralarm.core.domain.alarm.DEFAULT_SNOOZE_NUMBER_TO_DURATION_PAIR
 import com.sweak.qralarm.core.domain.alarm.DEFAULT_TEMPORARY_MUTE_DURATION_IN_SECONDS
+import com.sweak.qralarm.core.domain.alarm.AVAILABLE_CHAINED_ALARM_DELAYS_MINUTES
 import com.sweak.qralarm.core.ui.model.AlarmRepeatingScheduleWrapper
 import com.sweak.qralarm.core.ui.model.Code
+import com.sweak.qralarm.features.add_edit_alarm.model.ChainedAlarmWrapper
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -67,7 +69,18 @@ data class AddEditAlarmFlowState(
     val permissionsDialogState: PermissionsDialogState = PermissionsDialogState(),
     val isDeleteAlarmDialogVisible: Boolean = false,
     val isDiscardAlarmChangesDialogVisible: Boolean = false,
-    val isDownloadCodeDialogVisible: Boolean = false
+    val isDownloadCodeDialogVisible: Boolean = false,
+    val chainedAlarms: List<ChainedAlarmWrapper> = emptyList(),
+    val canAddChainedAlarms: Boolean = true,
+    val availableChainedAlarmDelaysMinutes: List<Int> =
+        AVAILABLE_CHAINED_ALARM_DELAYS_MINUTES,
+    val assignCodeForChainedAlarmDialogState: ChainedAlarmDialogState =
+        ChainedAlarmDialogState(),
+    val editCodeNameForChainedAlarmDialogState: EditCodeNameForChainedAlarmDialogState =
+        EditCodeNameForChainedAlarmDialogState(),
+    val isAlarmsChainDisclaimerDialogVisible: Boolean = false,
+    val deleteChainedAlarmDialogState: DeleteChainedAlarmDialogState =
+        DeleteChainedAlarmDialogState()
 ) : Parcelable {
     @Parcelize
     data class PermissionsDialogState(
@@ -82,5 +95,24 @@ data class AddEditAlarmFlowState(
     data class EditCodeNameDialogState(
         val isVisible: Boolean = false,
         val initialCodeName: String? = null
+    ) : Parcelable
+
+    @Parcelize
+    data class ChainedAlarmDialogState(
+        val isVisible: Boolean = false,
+        val chainedAlarmUiId: String? = null
+    ) : Parcelable
+
+    @Parcelize
+    data class EditCodeNameForChainedAlarmDialogState(
+        val isVisible: Boolean = false,
+        val chainedAlarmUiId: String? = null,
+        val initialCodeName: String? = null
+    ) : Parcelable
+
+    @Parcelize
+    data class DeleteChainedAlarmDialogState(
+        val isVisible: Boolean = false,
+        val chainedAlarmUiId: String? = null
     ) : Parcelable
 }

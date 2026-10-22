@@ -26,9 +26,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.toColorInt
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sweak.qralarm.R
@@ -40,24 +42,18 @@ import com.sweak.qralarm.core.designsystem.theme.isQRAlarmTheme
 import com.sweak.qralarm.core.designsystem.theme.space
 import com.sweak.qralarm.core.ui.components.NavigationButton
 import com.sweak.qralarm.core.ui.components.ToggleSetting
-import com.sweak.qralarm.core.ui.compose_util.ObserveAsEvents
+import com.sweak.qralarm.features.theme.components.ColorPickerBottomSheet
 import com.sweak.qralarm.features.theme.components.ThemeSelector
 import com.sweak.qralarm.features.theme.model.ThemeUi
 import com.sweak.qralarm.features.theme.util.AVAILABLE_THEMES
+import com.sweak.qralarm.features.theme.util.THEME_1
 
 @Composable
 fun ThemeScreen(
-    onBackClicked: () -> Unit,
-    onGoToQRAlarmProCheckout: () -> Unit
+    onBackClicked: () -> Unit
 ) {
     val viewModel = hiltViewModel<ThemeViewModel>()
     val state by viewModel.state.collectAsStateWithLifecycle()
-
-    ObserveAsEvents(flow = viewModel.backendEvents) { event ->
-        when (event) {
-            is ThemeScreenBackendEvent.RedirectToQRAlarmPro -> onGoToQRAlarmProCheckout()
-        }
-    }
 
     ThemeScreenContent(
         state = state,
@@ -76,6 +72,21 @@ fun ThemeScreenContent(
     state: ThemeScreenState,
     onEvent: (ThemeScreenUserEvent) -> Unit
 ) {
+    if (state.isColorPickerOpen) {
+        val initialColor = (state.theme as? ThemeUi.Custom)?.primaryColor ?: THEME_1.primaryColor
+        val parsedInitialColor = runCatching {
+            Color(initialColor.toColorInt())
+        }.getOrDefault(Color(THEME_1.primaryColor.toColorInt()))
+
+        ColorPickerBottomSheet(
+            initialColor = parsedInitialColor,
+            onDismiss = { onEvent(ThemeScreenUserEvent.OnColorPickerDismissed) },
+            onColorPicked = { color ->
+                onEvent(ThemeScreenUserEvent.OnColorPicked(color = color))
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -169,11 +180,18 @@ fun ThemeScreenContent(
                                 vertical = MaterialTheme.space.mediumLarge
                             )
                     ) {
+                        val selectedTheme = state.theme
+
                         state.availableCustomThemes.forEach { theme ->
                             ThemeSelector(
                                 theme = theme,
+                                isSelected = selectedTheme is ThemeUi.Custom &&
+                                    selectedTheme.primaryColor.equals(
+                                        theme.primaryColor,
+                                        ignoreCase = true
+                                    ),
                                 onClick = {
-                                    onEvent(ThemeScreenUserEvent.OnCustomThemeSelected)
+                                    onEvent(ThemeScreenUserEvent.OnCustomThemeSelected(theme))
                                 }
                             )
                         }

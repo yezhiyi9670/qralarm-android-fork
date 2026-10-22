@@ -137,12 +137,23 @@ class HomeViewModel @Inject constructor(
             val alarmRepeatingScheduleWrapper =
                 convertAlarmRepeatingMode(alarm.repeatingMode) ?: return@mapNotNull null
 
+            val activeChainedAlarm = alarm.chainedAlarms.firstOrNull {
+                it.nextChainedAlarmTimeInMillis != null
+            }
+            val activeChainedAlarmDateTime = activeChainedAlarm
+                ?.nextChainedAlarmTimeInMillis
+                ?.let { timeInMillis ->
+                    java.time.Instant.ofEpochMilli(timeInMillis)
+                        .atZone(java.time.ZoneId.systemDefault())
+                }
+
             return@mapNotNull AlarmWrapper(
                 alarmId = alarm.alarmId,
-                alarmHourOfDay = alarm.alarmHourOfDay,
-                alarmMinute = alarm.alarmMinute,
-                alarmLabel = alarm.alarmLabel,
-                nextAlarmTimeInMillis = alarm.nextAlarmTimeInMillis,
+                alarmHourOfDay = activeChainedAlarmDateTime?.hour ?: alarm.alarmHourOfDay,
+                alarmMinute = activeChainedAlarmDateTime?.minute ?: alarm.alarmMinute,
+                alarmLabel = activeChainedAlarm?.label ?: alarm.alarmLabel,
+                nextAlarmTimeInMillis = activeChainedAlarm?.nextChainedAlarmTimeInMillis
+                    ?: alarm.nextAlarmTimeInMillis,
                 alarmRepeatingScheduleWrapper = alarmRepeatingScheduleWrapper,
                 isAlarmEnabled = alarm.isAlarmEnabled,
                 isCodeEnabled = alarm.isUsingCode,

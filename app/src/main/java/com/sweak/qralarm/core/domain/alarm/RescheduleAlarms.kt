@@ -13,6 +13,7 @@ class RescheduleAlarms @Inject constructor(
     private val setAlarm: SetAlarm,
     private val disableAlarm: DisableAlarm,
     private val snoozeAlarm: SnoozeAlarm,
+    private val scheduleChainedAlarm: ScheduleChainedAlarm,
     private val clock: Clock
 ) {
     suspend operator fun invoke(rescheduleAlarmsIfMissedByFiveMinutes: Boolean = true) {
@@ -99,6 +100,10 @@ class RescheduleAlarms @Inject constructor(
                             isReschedulingMissedAlarm = false
                         )
                     }
+                }
+
+                if (alarm.chainedAlarms.any { it.isArmed }) {
+                    scheduleChainedAlarm(alarmId = alarm.alarmId, isRescheduling = true)
                 }
             }
         }

@@ -257,4 +257,12 @@
     <string name="backup_import_failed">Không thể đọc bản sao lưu. Vui lòng thử lại.</string>
     <string name="standalone_app">Ứng dụng độc lập</string>
     <string name="cancellation_lock_active_use_toggle_to_disable">Khóa chống hủy đang bật — dùng nút bật/tắt để tắt.</string>
+
+    <string name="alarm_in_chain">Báo thức trong chuỗi %1$d</string>
+    <string name="after_colon">Sau:</string>
+    <string name="alarms_chain_disclaimer">Lưu ý về chuỗi báo thức</string>
+    <string name="alarms_chain_disclaimer_description">Lưu ý rằng chuỗi báo thức có thể không kích hoạt trong một số trường hợp: khi bạn tắt báo thức ban đầu trước khi báo thức reo, khi bạn tắt báo thức bằng nhiệm vụ khẩn cấp hoặc khi bạn tắt tính năng quét mã cho báo thức.</string>
+    <string name="delete_this_alarm_in_chain">Xóa báo thức này khỏi chuỗi?</string>
+    <string name="next_alarm_in_chain_at">Báo thức tiếp theo trong chuỗi lúc:</string>
+    <string name="upcoming_chained_alarm_indication_notification_text">Báo thức tiếp theo trong chuỗi vào %1$s</string>
 </resources>

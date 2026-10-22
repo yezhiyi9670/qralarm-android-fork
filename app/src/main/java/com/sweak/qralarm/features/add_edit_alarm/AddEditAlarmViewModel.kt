@@ -11,8 +11,11 @@ import com.sweak.qralarm.core.domain.alarm.AddOrEditAlarm
 import com.sweak.qralarm.core.domain.alarm.Alarm
 import com.sweak.qralarm.core.domain.alarm.Alarm.Ringtone
 import com.sweak.qralarm.core.domain.alarm.AlarmsRepository
+import com.sweak.qralarm.core.domain.alarm.AVAILABLE_CHAINED_ALARM_DELAYS_MINUTES
+import com.sweak.qralarm.core.domain.alarm.ChainedAlarm
 import com.sweak.qralarm.core.domain.alarm.CodesRepository
 import com.sweak.qralarm.core.domain.alarm.DeleteAlarm
+import com.sweak.qralarm.core.domain.alarm.MAX_CHAINED_ALARMS
 import com.sweak.qralarm.core.domain.alarm.SetAlarm
 import com.sweak.qralarm.core.domain.user.UserDataRepository
 import com.sweak.qralarm.core.domain.user.model.OptimizationGuideState
@@ -29,6 +32,8 @@ import com.sweak.qralarm.core.ui.model.Code
 import com.sweak.qralarm.core.ui.sound.AlarmRingtonePlayer
 import com.sweak.qralarm.features.add_edit_alarm.AddEditAlarmFlowUserEvent.AddEditAlarmScreenUserEvent
 import com.sweak.qralarm.features.add_edit_alarm.AddEditAlarmFlowUserEvent.AdvancedAlarmSettingsScreenUserEvent
+import com.sweak.qralarm.features.add_edit_alarm.AddEditAlarmFlowUserEvent.AlarmsChainSettingsScreenUserEvent
+import com.sweak.qralarm.features.add_edit_alarm.model.ChainedAlarmWrapper
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -47,6 +52,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.util.UUID
 import kotlin.time.Duration.Companion.milliseconds
 import com.sweak.qralarm.core.domain.alarm.Code as DomainCode
 
@@ -79,6 +85,7 @@ class AddEditAlarmViewModel @AssistedInject constructor(
 
     private var nextAlarmTimeUpdateJob: Job? = null
     private var hasAlarmSaveStarted = false
+    private var pendingChainedAlarmUiId: String? = null
 
     init {
         var launchedFromSavedState = false
@@ -228,7 +235,10 @@ class AddEditAlarmViewModel @AssistedInject constructor(
                             isEmergencyTaskEnabled = alarm.isEmergencyTaskEnabled,
                             alarmLabel = alarm.alarmLabel,
                             gentleWakeupDurationInSeconds = alarm.gentleWakeUpDurationInSeconds,
-                            temporaryMuteDurationInSeconds = alarm.temporaryMuteDurationInSeconds
+                            temporaryMuteDurationInSeconds = alarm.temporaryMuteDurationInSeconds,
+                            chainedAlarms = createChainedAlarmWrappers(alarm),
+                            canAddChainedAlarms =
+                                alarm.chainedAlarms.size < MAX_CHAINED_ALARMS
                         )
                     }
                 }
@@ -247,6 +257,40 @@ class AddEditAlarmViewModel @AssistedInject constructor(
                     launchedFromSavedState = false
                     initialDefaultCodeUpdate = false
                 } else {
+                    if (pendingChainedAlarmUiId != null) {
+                        val chainedAlarmUiId = pendingChainedAlarmUiId
+                        pendingChainedAlarmUiId = null
+
+                        val existingCode = state.value.previouslySavedCodes
+                            .find { it.value == temporaryScannedCode }
+                        val code = temporaryScannedCode?.let {
+                            Code(
+                                id = existingCode?.id ?: 0L,
+                                value = it,
+                                name = existingCode?.name
+                            )
+                        }
+
+                        if (code != null) {
+                            hasUnsavedChanges = true
+
+                            _state.update { currentState ->
+                                currentState.copy(
+                                    chainedAlarms = currentState.chainedAlarms.map { wrapper ->
+                                        if (wrapper.uiId == chainedAlarmUiId) {
+                                            wrapper.copy(assignedCode = code)
+                                        } else {
+                                            wrapper
+                                        }
+                                    }
+                                )
+                            }
+                        }
+
+                        initialDefaultCodeUpdate = false
+                        return@collect
+                    }
+
                     if (temporaryScannedCode != state.value.temporaryAssignedCode?.value) {
                         hasUnsavedChanges = true
                     }
@@ -426,7 +470,13 @@ class AddEditAlarmViewModel @AssistedInject constructor(
                         currentState.copy(
                             alarmHourOfDay = event.newAlarmHourOfDay,
                             alarmMinute = event.newAlarmMinute,
-                            isDialerPickerDialogVisible = false
+                            isDialerPickerDialogVisible = false,
+                            chainedAlarms = recalculateChainedAlarmTimes(
+                                parentHourOfDay = event.newAlarmHourOfDay,
+                                parentMinute = event.newAlarmMinute,
+                                chainedAlarms = currentState.chainedAlarms,
+                                availableDelays = currentState.availableChainedAlarmDelaysMinutes
+                            )
                         )
                     }
 
@@ -867,9 +917,314 @@ class AddEditAlarmViewModel @AssistedInject constructor(
                 }
             }
 
+            is AlarmsChainSettingsScreenUserEvent.AddNewChainedAlarmClicked -> {
+                if (state.value.canAddChainedAlarms) {
+                    hasUnsavedChanges = true
+
+                    _state.update { currentState ->
+                        val delays = currentState.availableChainedAlarmDelaysMinutes
+                        val lastChainedAlarm = currentState.chainedAlarms.lastOrNull()
+                        val parentHourOfDay = lastChainedAlarm?.alarmHourOfDay
+                            ?: currentState.alarmHourOfDay ?: 0
+                        val parentMinute = lastChainedAlarm?.alarmMinute
+                            ?: currentState.alarmMinute ?: 0
+                        val (hourOfDay, minute) = addDelayToTime(
+                            hourOfDay = parentHourOfDay,
+                            minute = parentMinute,
+                            delayMinutes = delays.first()
+                        )
+
+                        val chainedAlarm = ChainedAlarmWrapper(
+                            uiId = UUID.randomUUID().toString(),
+                            alarmHourOfDay = hourOfDay,
+                            alarmMinute = minute,
+                            selectedDelayMinutesIndex = 0,
+                            assignedCode = null,
+                            label = null
+                        )
+                        val chainedAlarms = currentState.chainedAlarms + chainedAlarm
+
+                        currentState.copy(
+                            chainedAlarms = chainedAlarms,
+                            canAddChainedAlarms = chainedAlarms.size < MAX_CHAINED_ALARMS
+                        )
+                    }
+                }
+            }
+
+            is AlarmsChainSettingsScreenUserEvent.ChainedAlarmDelayMinutesChanged -> {
+                hasUnsavedChanges = true
+
+                _state.update { currentState ->
+                    val chainedAlarms = currentState.chainedAlarms.map { wrapper ->
+                        if (wrapper.uiId == event.chainedAlarmUiId) {
+                            wrapper.copy(
+                                selectedDelayMinutesIndex = event.delayMinutesIndex.coerceIn(
+                                    0,
+                                    currentState.availableChainedAlarmDelaysMinutes.lastIndex
+                                )
+                            )
+                        } else wrapper
+                    }
+
+                    currentState.copy(
+                        chainedAlarms = recalculateChainedAlarmTimes(
+                            parentHourOfDay = currentState.alarmHourOfDay ?: 0,
+                            parentMinute = currentState.alarmMinute ?: 0,
+                            chainedAlarms = chainedAlarms,
+                            availableDelays = currentState.availableChainedAlarmDelaysMinutes
+                        )
+                    )
+                }
+            }
+
+            is AlarmsChainSettingsScreenUserEvent.AssignCodeForChainedAlarmDialogVisible -> {
+                _state.update { currentState ->
+                    currentState.copy(
+                        assignCodeForChainedAlarmDialogState =
+                            currentState.assignCodeForChainedAlarmDialogState.copy(
+                                isVisible = event.isVisible,
+                                chainedAlarmUiId =
+                                    if (event.isVisible) event.chainedAlarmUiId else null
+                            )
+                    )
+                }
+            }
+
+            is AlarmsChainSettingsScreenUserEvent.EditCodeNameForChainedAlarmDialogVisible -> {
+                _state.update { currentState ->
+                    val chainedAlarm = currentState.chainedAlarms.find {
+                        it.uiId == event.chainedAlarmUiId
+                    }
+
+                    currentState.copy(
+                        editCodeNameForChainedAlarmDialogState =
+                            currentState.editCodeNameForChainedAlarmDialogState.copy(
+                                isVisible = event.isVisible,
+                                chainedAlarmUiId =
+                                    if (event.isVisible) event.chainedAlarmUiId else null,
+                                initialCodeName =
+                                    if (event.isVisible) chainedAlarm?.assignedCode?.name else null
+                            )
+                    )
+                }
+            }
+
+            is AlarmsChainSettingsScreenUserEvent.CodeNameForChainedAlarmEdited -> {
+                hasUnsavedChanges = true
+
+                _state.update { currentState ->
+                    val chainedAlarm = currentState.chainedAlarms.find {
+                        it.uiId == event.chainedAlarmUiId
+                    }
+                    val codeId = chainedAlarm?.assignedCode?.id
+                    val codeValue = chainedAlarm?.assignedCode?.value
+
+                    currentState.copy(
+                        chainedAlarms = currentState.chainedAlarms.map { wrapper ->
+                            if (codeId != null && wrapper.assignedCode?.id == codeId ||
+                                codeId == 0L && codeValue != null &&
+                                wrapper.assignedCode?.value == codeValue
+                            ) {
+                                wrapper.copy(
+                                    assignedCode = wrapper.assignedCode?.copy(
+                                        name = event.newName
+                                    )
+                                )
+                            } else if (wrapper.uiId == event.chainedAlarmUiId) {
+                                wrapper.copy(
+                                    assignedCode = wrapper.assignedCode?.copy(
+                                        name = event.newName
+                                    )
+                                )
+                            } else wrapper
+                        },
+                        previouslySavedCodes = currentState.previouslySavedCodes.map { code ->
+                            if (code.id == codeId ||
+                                (codeId == 0L && codeValue != null && code.value == codeValue)
+                            ) {
+                                code.copy(name = event.newName)
+                            } else code
+                        },
+                        currentlyAssignedCode =
+                            if (currentState.currentlyAssignedCode?.id == codeId &&
+                                codeId != 0L
+                            ) {
+                                currentState.currentlyAssignedCode?.copy(name = event.newName)
+                            } else currentState.currentlyAssignedCode,
+                        temporaryAssignedCode =
+                            if (currentState.temporaryAssignedCode?.id == codeId &&
+                                codeId != 0L
+                            ) {
+                                currentState.temporaryAssignedCode?.copy(name = event.newName)
+                            } else currentState.temporaryAssignedCode,
+                        editCodeNameForChainedAlarmDialogState =
+                            currentState.editCodeNameForChainedAlarmDialogState.copy(
+                                isVisible = false,
+                                chainedAlarmUiId = null,
+                                initialCodeName = null
+                            )
+                    )
+                }
+            }
+
+            is AlarmsChainSettingsScreenUserEvent.CodeForChainedAlarmUpdated -> {
+                hasUnsavedChanges = true
+
+                _state.update { currentState ->
+                    currentState.copy(
+                        chainedAlarms = currentState.chainedAlarms.map { wrapper ->
+                            if (wrapper.uiId == event.chainedAlarmUiId) {
+                                wrapper.copy(assignedCode = event.code)
+                            } else wrapper
+                        },
+                        assignCodeForChainedAlarmDialogState =
+                            currentState.assignCodeForChainedAlarmDialogState.copy(
+                                isVisible = false,
+                                chainedAlarmUiId = null
+                            )
+                    )
+                }
+            }
+
+            is AlarmsChainSettingsScreenUserEvent.TryScanSpecificCodeForChainedAlarm -> {
+                pendingChainedAlarmUiId = event.chainedAlarmUiId
+
+                _state.update { currentState ->
+                    currentState.copy(
+                        assignCodeForChainedAlarmDialogState =
+                            currentState.assignCodeForChainedAlarmDialogState.copy(
+                                isVisible = false,
+                                chainedAlarmUiId = null
+                            )
+                    )
+                }
+            }
+
+            is AlarmsChainSettingsScreenUserEvent.DeleteChainedAlarmDialogVisible -> {
+                _state.update { currentState ->
+                    currentState.copy(
+                        deleteChainedAlarmDialogState =
+                            currentState.deleteChainedAlarmDialogState.copy(
+                                isVisible = event.isVisible,
+                                chainedAlarmUiId =
+                                    if (event.isVisible) event.chainedAlarmUiId else null
+                            )
+                    )
+                }
+            }
+
+            is AlarmsChainSettingsScreenUserEvent.DeleteChainedAlarm -> {
+                hasUnsavedChanges = true
+
+                _state.update { currentState ->
+                    val chainedAlarms = currentState.chainedAlarms.filterNot {
+                        it.uiId == event.chainedAlarmUiId
+                    }
+
+                    currentState.copy(
+                        chainedAlarms = recalculateChainedAlarmTimes(
+                            parentHourOfDay = currentState.alarmHourOfDay ?: 0,
+                            parentMinute = currentState.alarmMinute ?: 0,
+                            chainedAlarms = chainedAlarms,
+                            availableDelays = currentState.availableChainedAlarmDelaysMinutes
+                        ),
+                        canAddChainedAlarms = chainedAlarms.size < MAX_CHAINED_ALARMS,
+                        deleteChainedAlarmDialogState =
+                            currentState.deleteChainedAlarmDialogState.copy(
+                                isVisible = false,
+                                chainedAlarmUiId = null
+                            )
+                    )
+                }
+            }
+
+            is AlarmsChainSettingsScreenUserEvent.AlarmsChainDisclaimerDialogVisible -> {
+                _state.update { currentState ->
+                    currentState.copy(
+                        isAlarmsChainDisclaimerDialogVisible = event.isVisible
+                    )
+                }
+            }
+
+            is AlarmsChainSettingsScreenUserEvent.ChainedAlarmLabelChanged -> {
+                hasUnsavedChanges = true
+
+                _state.update { currentState ->
+                    currentState.copy(
+                        chainedAlarms = currentState.chainedAlarms.map { wrapper ->
+                            if (wrapper.uiId == event.chainedAlarmUiId) {
+                                wrapper.copy(label = event.newLabel)
+                            } else wrapper
+                        }
+                    )
+                }
+            }
+
             else -> { /* no-op */
             }
         }
+    }
+
+    private fun createChainedAlarmWrappers(alarm: Alarm): List<ChainedAlarmWrapper> {
+        var hourOfDay = alarm.alarmHourOfDay
+        var minute = alarm.alarmMinute
+
+        return alarm.chainedAlarms.sortedBy { it.order }.mapIndexed { index, chainedAlarm ->
+            val delayMinutesIndex = AVAILABLE_CHAINED_ALARM_DELAYS_MINUTES
+                .indexOf(chainedAlarm.delayMinutes)
+                .takeIf { it >= 0 } ?: 0
+            val delayMinutes = AVAILABLE_CHAINED_ALARM_DELAYS_MINUTES[delayMinutesIndex]
+            val time = addDelayToTime(hourOfDay, minute, delayMinutes)
+            hourOfDay = time.first
+            minute = time.second
+
+            ChainedAlarmWrapper(
+                id = chainedAlarm.chainedAlarmId,
+                uiId = UUID.randomUUID().toString(),
+                alarmHourOfDay = hourOfDay,
+                alarmMinute = minute,
+                selectedDelayMinutesIndex = delayMinutesIndex,
+                assignedCode = chainedAlarm.assignedCode?.let {
+                    Code(id = it.codeId, value = it.value, name = it.name)
+                },
+                label = chainedAlarm.label
+            )
+        }
+    }
+
+    private fun recalculateChainedAlarmTimes(
+        parentHourOfDay: Int,
+        parentMinute: Int,
+        chainedAlarms: List<ChainedAlarmWrapper>,
+        availableDelays: List<Int>
+    ): List<ChainedAlarmWrapper> {
+        var hourOfDay = parentHourOfDay
+        var minute = parentMinute
+
+        return chainedAlarms.map { wrapper ->
+            val delayMinutes = availableDelays.getOrElse(
+                wrapper.selectedDelayMinutesIndex
+            ) { availableDelays.first() }
+            val time = addDelayToTime(hourOfDay, minute, delayMinutes)
+            hourOfDay = time.first
+            minute = time.second
+
+            wrapper.copy(
+                alarmHourOfDay = hourOfDay,
+                alarmMinute = minute
+            )
+        }
+    }
+
+    /** Returns the time [delayMinutes] after [hourOfDay]:[minute], wrapping at midnight. */
+    private fun addDelayToTime(
+        hourOfDay: Int,
+        minute: Int,
+        delayMinutes: Int
+    ): Pair<Int, Int> {
+        val totalMinutes = (hourOfDay * 60 + minute + delayMinutes).mod(24 * 60)
+        return Pair(totalMinutes / 60, totalMinutes % 60)
     }
 
     private suspend fun setAlarm(currentState: AddEditAlarmFlowState) {
@@ -979,11 +1334,28 @@ class AddEditAlarmViewModel @AssistedInject constructor(
             alarmLabel = currentState.alarmLabel,
             gentleWakeUpDurationInSeconds = currentState.gentleWakeupDurationInSeconds,
             temporaryMuteDurationInSeconds = currentState.temporaryMuteDurationInSeconds,
-            skipAlarmUntilTimeInMillis = null
+            skipAlarmUntilTimeInMillis = null,
+            chainedAlarms = currentState.chainedAlarms.mapIndexed { index, wrapper ->
+                ChainedAlarm(
+                    chainedAlarmId = wrapper.id,
+                    delayMinutes = currentState.availableChainedAlarmDelaysMinutes.getOrElse(
+                        wrapper.selectedDelayMinutesIndex
+                    ) { currentState.availableChainedAlarmDelaysMinutes.first() },
+                    assignedCode = wrapper.assignedCode?.let {
+                        DomainCode(codeId = it.id, value = it.value, name = it.name)
+                    },
+                    label = wrapper.label,
+                    order = index,
+                    // Editing an alarm re-arms its parent occurrence, so any chain in progress
+                    // is disarmed here and starts over when the parent alarm next rings.
+                    nextChainedAlarmTimeInMillis = null
+                )
+            }
         )
 
         val addOrEditAlarmResult = addOrEditAlarm(
             alarm = alarmToSave,
+            chainedAlarms = alarmToSave.chainedAlarms,
             temporaryCustomRingtoneContentUriString =
                 currentState.temporaryCustomAlarmRingtoneUri?.toString()
         )

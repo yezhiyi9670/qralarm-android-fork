@@ -91,7 +91,7 @@ class SnoozeAlarmTest {
             alarmScheduler.setAlarm(
                 alarmId = alarmId,
                 alarmTimeInMillis = epochMillisAt(TODAY.atTime(7, 35)),
-                isSnoozeAlarm = true
+                alarmType = AlarmType.SNOOZED
             )
         }
     }
@@ -110,7 +110,7 @@ class SnoozeAlarmTest {
                 alarmId = alarmId,
                 alarmHourOfDay = 7,
                 alarmMinute = 35,
-                isSnoozeAlarm = true
+                alarmType = AlarmType.SNOOZED
             )
         }
     }
@@ -166,7 +166,7 @@ class SnoozeAlarmTest {
             alarmScheduler.setAlarm(
                 alarmId = alarmId,
                 alarmTimeInMillis = epochMillisAt(TODAY.atTime(7, 40)),
-                isSnoozeAlarm = true
+                alarmType = AlarmType.SNOOZED
             )
         }
     }

@@ -6,14 +6,16 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.sweak.qralarm.core.storage.database.dao.AlarmsDao
+import com.sweak.qralarm.core.storage.database.dao.ChainedAlarmsDao
 import com.sweak.qralarm.core.storage.database.dao.CodesDao
 import com.sweak.qralarm.core.storage.database.model.AlarmEntity
+import com.sweak.qralarm.core.storage.database.model.ChainedAlarmEntity
 import com.sweak.qralarm.core.storage.database.model.CodeEntity
 
-const val QRALARM_DATABASE_VERSION = 10
+const val QRALARM_DATABASE_VERSION = 11
 
 @Database(
-    entities = [AlarmEntity::class, CodeEntity::class],
+    entities = [AlarmEntity::class, CodeEntity::class, ChainedAlarmEntity::class],
     version = QRALARM_DATABASE_VERSION,
     exportSchema = true,
     autoMigrations = [
@@ -21,12 +23,14 @@ const val QRALARM_DATABASE_VERSION = 10
         AutoMigration(from = 2, to = 3),
         AutoMigration(from = 4, to = 5),
         AutoMigration(from = 5, to = 6),
-        AutoMigration(from = 6, to = 7)
+        AutoMigration(from = 6, to = 7),
+        AutoMigration(from = 10, to = 11)
     ]
 )
 abstract class QRAlarmDatabase : RoomDatabase() {
     abstract fun alarmsDao(): AlarmsDao
     abstract fun codesDao(): CodesDao
+    abstract fun chainedAlarmsDao(): ChainedAlarmsDao
 
     companion object {
         val MIGRATION_3_4 = object : Migration(3, 4) {

@@ -338,7 +338,7 @@ class SetAlarmTest {
             alarmScheduler.setAlarm(
                 alarmId = alarmId,
                 alarmTimeInMillis = epochMillisAt(SUNDAY.atTime(7, 30)),
-                isSnoozeAlarm = false
+                alarmType = AlarmType.REGULAR
             )
         }
     }
@@ -429,7 +429,7 @@ class SetAlarmTest {
                 alarmId = alarmId,
                 alarmHourOfDay = 7,
                 alarmMinute = 30,
-                isSnoozeAlarm = false
+                alarmType = AlarmType.REGULAR
             )
         }
         verify(exactly = 0) { alarmScheduler.scheduleUpcomingAlarmNotification(any(), any()) }

@@ -267,4 +267,12 @@
     <string name="backup_too_new">Bu yedek QRAlarm\'ın daha yeni bir sürümüyle oluşturulmuş. Uygulamayı güncelleyin ve tekrar deneyin.</string>
     <string name="backup_import_failed">Yedek okunamadı. Lütfen tekrar deneyin.</string>
     <string name="cancellation_lock_active_use_toggle_to_disable">İptal kilidi etkin. Devre dışı bırakmak için açma/kapatma düğmesini kullanın.</string>
+
+    <string name="alarm_in_chain">Zincirdeki alarm %1$d</string>
+    <string name="after_colon">Sonra:</string>
+    <string name="alarms_chain_disclaimer">Alarm zinciri sorumluluk reddi beyanı</string>
+    <string name="alarms_chain_disclaimer_description">Zincirdeki alarmların çalışmayacağı durumlar olduğunu unutmayın: orijinal alarm çalışmadan önce devre dışı bıraktığınızda, acil durum göreviyle alarmı devre dışı bıraktığınızda veya alarm için kod taramayı devre dışı bıraktığınızda.</string>
+    <string name="delete_this_alarm_in_chain">Bu alarmı zincirde silmek mi?</string>
+    <string name="next_alarm_in_chain_at">Zincirdeki bir sonraki alarm:</string>
+    <string name="upcoming_chained_alarm_indication_notification_text">Zincirdeki bir sonraki alarm %1$s</string>
 </resources>

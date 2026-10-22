@@ -287,4 +287,12 @@
     <string name="backup_too_new">Эта резервная копия была создана в более новой версии QRAlarm. Обновите приложение и попробуйте снова.</string>
     <string name="backup_import_failed">Не удалось прочитать резервную копию. Попробуйте ещё раз.</string>
     <string name="cancellation_lock_active_use_toggle_to_disable">Блокировка отмены активна — отключите её переключателем.</string>
+
+    <string name="alarm_in_chain">Будильник в цепочке %1$d</string>
+    <string name="after_colon">После:</string>
+    <string name="alarms_chain_disclaimer">Отказ от ответственности по цепочке будильников</string>
+    <string name="alarms_chain_disclaimer_description">Учитывайте, что в некоторых случаях будильники в цепочке не сработают: если вы отключите оригинальный будильник до его срабатывания, если вы отключите будильник с экстренной задачей или если вы отключите сканирование кода для будильника.</string>
+    <string name="delete_this_alarm_in_chain">Удалить этот будильник в цепочке?</string>
+    <string name="next_alarm_in_chain_at">Следующий будильник в цепочке в:</string>
+    <string name="upcoming_chained_alarm_indication_notification_text">Следующий будильник в цепочке в %1$s</string>
 </resources>

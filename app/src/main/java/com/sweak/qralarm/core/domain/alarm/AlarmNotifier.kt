@@ -5,7 +5,7 @@ interface AlarmNotifier {
         alarmId: Long,
         alarmHourOfDay: Int,
         alarmMinute: Int,
-        isSnoozeAlarm: Boolean
+        alarmType: AlarmType
     )
 
     fun notifyAboutMissedAlarm()

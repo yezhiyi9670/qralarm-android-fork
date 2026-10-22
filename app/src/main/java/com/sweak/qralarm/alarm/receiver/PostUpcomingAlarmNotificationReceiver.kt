@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import com.sweak.qralarm.alarm.QRAlarmManager
 import com.sweak.qralarm.core.domain.alarm.AlarmsRepository
+import com.sweak.qralarm.core.domain.alarm.AlarmType
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,11 +34,27 @@ class PostUpcomingAlarmNotificationReceiver : BroadcastReceiver() {
 
                 val alarm = alarmsRepository.getAlarm(alarmId = alarmId) ?: return@launch
 
+                val activeChainedAlarm = alarm.chainedAlarms.firstOrNull {
+                    it.nextChainedAlarmTimeInMillis != null
+                }
+                val alarmType = when {
+                    activeChainedAlarm != null -> AlarmType.CHAINED
+                    alarm.snoozeConfig.isAlarmSnoozed -> AlarmType.SNOOZED
+                    else -> AlarmType.REGULAR
+                }
+
+                val chainedAlarmDateTime = activeChainedAlarm
+                    ?.nextChainedAlarmTimeInMillis
+                    ?.let { timeInMillis ->
+                        java.time.Instant.ofEpochMilli(timeInMillis)
+                            .atZone(java.time.ZoneId.systemDefault())
+                    }
+
                 qrAlarmManager.showUpcomingAlarmNotification(
                     alarmId = alarm.alarmId,
-                    alarmHourOfDay = alarm.alarmHourOfDay,
-                    alarmMinute = alarm.alarmMinute,
-                    isSnoozeAlarm = false
+                    alarmHourOfDay = chainedAlarmDateTime?.hour ?: alarm.alarmHourOfDay,
+                    alarmMinute = chainedAlarmDateTime?.minute ?: alarm.alarmMinute,
+                    alarmType = alarmType
                 )
             } finally {
                 pendingResult.finish()

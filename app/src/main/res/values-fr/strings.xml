@@ -277,4 +277,12 @@
     <string name="backup_too_new">Cette sauvegarde a été créée avec une version plus récente de QRAlarm. Mettez l\'application à jour et réessayez.</string>
     <string name="backup_import_failed">Impossible de lire la sauvegarde. Veuillez réessayer.</string>
     <string name="cancellation_lock_active_use_toggle_to_disable">Verrouillage d’annulation actif — utilisez le bouton à bascule pour le désactiver</string>
+
+    <string name="alarm_in_chain">Alarme en chaîne %1$d</string>
+    <string name="after_colon">Après :</string>
+    <string name="alarms_chain_disclaimer">"Avertissement concernant la chaîne d'alarmes"</string>
+    <string name="alarms_chain_disclaimer_description">"Gardez à l'esprit qu'il existe des cas où les alarmes en chaîne ne se déclenchent pas : lorsque vous désactivez l'alarme d'origine avant qu'elle ne se déclenche, lorsque vous désactivez l'alarme à l'aide d'une tâche d'urgence ou lorsque vous désactivez l'analyse du code pour l'alarme."</string>
+    <string name="delete_this_alarm_in_chain">Supprimer cette alarme en chaîne ?</string>
+    <string name="next_alarm_in_chain_at">Prochaine alarme dans la chaîne à :</string>
+    <string name="upcoming_chained_alarm_indication_notification_text">Prochaine alarme dans la chaîne à %1$s</string>
 </resources>

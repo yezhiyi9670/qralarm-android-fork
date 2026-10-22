@@ -59,7 +59,16 @@ data class BackupAlarm(
     val isEmergencyTaskEnabled: Boolean,
     val alarmLabel: String?,
     val gentleWakeUpDurationInSeconds: Int,
-    val temporaryMuteDurationInSeconds: Int
+    val temporaryMuteDurationInSeconds: Int,
+    val chainedAlarms: List<BackupChainedAlarm> = emptyList()
+)
+
+data class BackupChainedAlarm(
+    val chainedAlarmId: Long,
+    val delayMinutes: Int,
+    val assignedCodeId: Long?,
+    val label: String?,
+    val order: Int
 )
 
 data class BackupCode(

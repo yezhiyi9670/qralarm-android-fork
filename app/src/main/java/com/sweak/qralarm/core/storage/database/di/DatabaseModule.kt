@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.sweak.qralarm.core.storage.database.QRAlarmDatabase
 import com.sweak.qralarm.core.storage.database.dao.AlarmsDao
+import com.sweak.qralarm.core.storage.database.dao.ChainedAlarmsDao
 import com.sweak.qralarm.core.storage.database.dao.CodesDao
 import dagger.Module
 import dagger.Provides
@@ -43,4 +44,9 @@ object DatabaseModule {
     fun provideCodesDao(
         qrAlarmDatabase: QRAlarmDatabase
     ): CodesDao = qrAlarmDatabase.codesDao()
+
+    @Provides
+    fun provideChainedAlarmsDao(
+        qrAlarmDatabase: QRAlarmDatabase
+    ): ChainedAlarmsDao = qrAlarmDatabase.chainedAlarmsDao()
 }

@@ -12,4 +12,8 @@ sealed class Theme {
     @Serializable
     @SerialName("dynamic")
     object Dynamic : Theme()
+
+    @Serializable
+    @SerialName("custom")
+    data class Custom(val primaryColor: String) : Theme()
 }

@@ -33,6 +33,9 @@ interface CodesDao {
         """
         DELETE FROM code
         WHERE codeId NOT IN (SELECT assignedCodeId FROM alarm WHERE assignedCodeId IS NOT NULL)
+        AND codeId NOT IN (
+            SELECT assignedCodeId FROM chainedAlarm WHERE assignedCodeId IS NOT NULL
+        )
         AND codeId != COALESCE(:defaultCodeId, -1)
         """
     )

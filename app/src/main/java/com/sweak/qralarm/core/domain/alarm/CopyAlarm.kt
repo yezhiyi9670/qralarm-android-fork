@@ -21,7 +21,16 @@ class CopyAlarm @Inject constructor(
             skipAlarmUntilTimeInMillis = null
         )
 
-        val newAlarmId = alarmsRepository.addOrEditAlarm(alarm = copiedAlarm)
+        val newAlarmId = alarmsRepository.addOrEditAlarm(
+            alarm = copiedAlarm,
+            chainedAlarms = copiedAlarm.chainedAlarms.mapIndexed { index, chainedAlarm ->
+                chainedAlarm.copy(
+                    chainedAlarmId = 0,
+                    order = index,
+                    nextChainedAlarmTimeInMillis = null
+                )
+            }
+        )
 
         if (sourceAlarm.customRingtoneUriString == null) return
 

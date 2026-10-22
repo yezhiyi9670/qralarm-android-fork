@@ -19,6 +19,7 @@ import androidx.lifecycle.viewModelScope
 import com.sweak.qralarm.core.domain.alarm.Alarm
 import com.sweak.qralarm.core.domain.alarm.AlarmsRepository
 import com.sweak.qralarm.core.domain.alarm.DisableAlarm
+import com.sweak.qralarm.core.domain.alarm.ScheduleChainedAlarm
 import com.sweak.qralarm.core.domain.alarm.SetAlarm
 import com.sweak.qralarm.core.ui.components.code_scanner.analyzer.CodeDetector
 import com.sweak.qralarm.core.ui.components.code_scanner.analyzer.ZXingCodeAnalyzer
@@ -46,7 +47,8 @@ class DisableAlarmScannerViewModel @AssistedInject constructor(
     @Assisted private val isDisablingBeforeAlarmFired: Boolean,
     private val alarmsRepository: AlarmsRepository,
     private val setAlarm: SetAlarm,
-    private val disableAlarm: DisableAlarm
+    private val disableAlarm: DisableAlarm,
+    private val scheduleChainedAlarm: ScheduleChainedAlarm
 ) : ViewModel() {
 
     @AssistedFactory
@@ -58,6 +60,7 @@ class DisableAlarmScannerViewModel @AssistedInject constructor(
     }
 
     private lateinit var alarm: Alarm
+    private var activeChainedAlarmId: Long? = null
 
     private var camera: Camera? = null
     private var shouldScan = true
@@ -75,9 +78,16 @@ class DisableAlarmScannerViewModel @AssistedInject constructor(
         viewModelScope.launch {
             alarmsRepository.getAlarm(alarmId = idOfAlarm)?.let {
                 alarm = it
+                val activeChainedAlarm = it.chainedAlarms.firstOrNull { chainedAlarm ->
+                    chainedAlarm.nextChainedAlarmTimeInMillis != null
+                }
+                activeChainedAlarmId = activeChainedAlarm?.chainedAlarmId
 
                 _state.update { currentState ->
-                    currentState.copy(codeName = alarm.assignedCode?.name)
+                    currentState.copy(
+                        codeName = activeChainedAlarm?.assignedCode?.name
+                            ?: alarm.assignedCode?.name
+                    )
                 }
             }
         }
@@ -176,10 +186,16 @@ class DisableAlarmScannerViewModel @AssistedInject constructor(
                     shouldScan = false
 
                     viewModelScope.launch {
-                        if (alarm.assignedCode == null) {
+                        val activeChainedAlarm = alarm.chainedAlarms.firstOrNull { chainedAlarm ->
+                            chainedAlarm.chainedAlarmId == activeChainedAlarmId
+                        }
+                        val codeToMatch = activeChainedAlarm?.assignedCode
+                            ?: alarm.assignedCode
+
+                        if (codeToMatch == null) {
                             disableAlarm(codeValue)
                         } else {
-                            if (codeValue == alarm.assignedCode?.value) {
+                            if (codeValue == codeToMatch.value) {
                                 disableAlarm(codeValue)
                             } else {
                                 showIncorrectCodeWarning()
@@ -267,8 +283,10 @@ class DisableAlarmScannerViewModel @AssistedInject constructor(
     }
 
     private suspend fun handleAlarmRescheduling() {
-        if (::alarm.isInitialized) {
-            if (alarm.repeatingMode is Alarm.RepeatingMode.Once) {
+        if (::alarm.isInitialized && !isDisablingBeforeAlarmFired) {
+            if (alarm.chainedAlarms.isNotEmpty()) {
+                scheduleChainedAlarm(alarmId = alarm.alarmId)
+            } else if (alarm.repeatingMode is Alarm.RepeatingMode.Once) {
                 disableAlarm(alarmId = alarm.alarmId)
             } else if (alarm.repeatingMode is Alarm.RepeatingMode.Days) {
                 setAlarm(

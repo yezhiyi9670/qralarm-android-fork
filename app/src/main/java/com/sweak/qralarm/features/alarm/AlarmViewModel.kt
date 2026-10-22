@@ -7,6 +7,7 @@ import com.sweak.qralarm.core.domain.alarm.Alarm
 import com.sweak.qralarm.core.domain.alarm.AlarmsRepository
 import com.sweak.qralarm.core.domain.alarm.DisableAlarm
 import com.sweak.qralarm.core.domain.alarm.SetAlarm
+import com.sweak.qralarm.core.domain.alarm.ScheduleChainedAlarm
 import com.sweak.qralarm.core.domain.alarm.SnoozeAlarm
 import com.sweak.qralarm.core.ui.compose_util.UiText
 import dagger.assisted.Assisted
@@ -27,11 +28,13 @@ class AlarmViewModel @AssistedInject constructor(
     private val alarmsRepository: AlarmsRepository,
     private val snoozeAlarm: SnoozeAlarm,
     private val setAlarm: SetAlarm,
-    private val disableAlarm: DisableAlarm
+    private val disableAlarm: DisableAlarm,
+    private val scheduleChainedAlarm: ScheduleChainedAlarm
 ) : ViewModel() {
 
     private lateinit var alarm: Alarm
     private var isAlarmBeingStopped: Boolean = false
+    private var activeChainedAlarmId: Long? = null
 
     @AssistedFactory
     interface Factory {
@@ -48,6 +51,11 @@ class AlarmViewModel @AssistedInject constructor(
         viewModelScope.launch {
             alarmsRepository.getAlarmFlow(alarmId = idOfAlarm).collect {
                 alarm = it
+                it.chainedAlarms.firstOrNull { chainedAlarm ->
+                    chainedAlarm.nextChainedAlarmTimeInMillis != null
+                }?.let { chainedAlarm ->
+                    activeChainedAlarmId = chainedAlarm.chainedAlarmId
+                }
 
                 if (!isAlarmBeingStopped) {
                     val isAlarmSnoozed = it.snoozeConfig.isAlarmSnoozed
@@ -55,8 +63,22 @@ class AlarmViewModel @AssistedInject constructor(
                         it.snoozeConfig.numberOfSnoozesLeft > 0 && !isAlarmSnoozed
                     val isAlarmRunning = it.isAlarmRunning
                     val isInteractionEnabled = isAlarmRunning || (isAlarmSnoozed && !isTransient)
+                    val activeChainedAlarm = it.chainedAlarms.firstOrNull { chainedAlarm ->
+                        chainedAlarm.chainedAlarmId == activeChainedAlarmId
+                    }
+                    val isUsingCode = it.isUsingCode ||
+                        activeChainedAlarm?.assignedCode != null
                     val alarmLabel = if (isAlarmRunning) {
-                        if (it.alarmLabel != null) {
+                        if (activeChainedAlarm != null) {
+                            if (activeChainedAlarm.label != null) {
+                                UiText.DynamicString(activeChainedAlarm.label)
+                            } else {
+                                UiText.StringResource(
+                                    R.string.alarm_in_chain,
+                                    it.chainedAlarms.indexOf(activeChainedAlarm) + 1
+                                )
+                            }
+                        } else if (it.alarmLabel != null) {
                             UiText.DynamicString(it.alarmLabel)
                         } else {
                             UiText.StringResource(resId = R.string.alarm_wake_up)
@@ -64,8 +86,9 @@ class AlarmViewModel @AssistedInject constructor(
                     } else if (isAlarmSnoozed) {
                         UiText.StringResource(resId = R.string.alarm_snoozed_until)
                     } else null
-                    val codeName = if (it.isUsingCode && (isAlarmRunning || isAlarmSnoozed)) {
-                        it.assignedCode?.name
+                    val codeName = if (isAlarmRunning || isAlarmSnoozed) {
+                        activeChainedAlarm?.assignedCode?.name
+                            ?: if (it.isUsingCode) it.assignedCode?.name else null
                     } else null
                     val timeToShow =
                         if (isAlarmSnoozed && it.snoozeConfig.nextSnoozedAlarmTimeInMillis != null) {
@@ -82,7 +105,8 @@ class AlarmViewModel @AssistedInject constructor(
                             isAlarmSnoozed = isAlarmSnoozed,
                             isSnoozeAvailable = isSnoozeAvailable,
                             isInteractionEnabled = isInteractionEnabled,
-                            isEmergencyAvailable = it.isUsingCode && it.isEmergencyTaskEnabled
+                            isEmergencyAvailable =
+                                isUsingCode && it.isEmergencyTaskEnabled
                         )
                     }
                 }
@@ -93,7 +117,11 @@ class AlarmViewModel @AssistedInject constructor(
     fun onEvent(event: AlarmScreenUserEvent) {
         when (event) {
             is AlarmScreenUserEvent.TryStopAlarm -> {
-                val isUsingCode = ::alarm.isInitialized && alarm.isUsingCode
+                val isUsingCode = ::alarm.isInitialized &&
+                    (alarm.isUsingCode || alarm.chainedAlarms.any { chainedAlarm ->
+                        chainedAlarm.chainedAlarmId == activeChainedAlarmId &&
+                            chainedAlarm.assignedCode != null
+                    })
 
                 if (!isUsingCode) {
                     viewModelScope.launch {
@@ -220,7 +248,9 @@ class AlarmViewModel @AssistedInject constructor(
 
     private suspend fun handleAlarmRescheduling() {
         if (::alarm.isInitialized) {
-            if (alarm.repeatingMode is Alarm.RepeatingMode.Once) {
+            if (alarm.chainedAlarms.isNotEmpty()) {
+                scheduleChainedAlarm(alarmId = alarm.alarmId)
+            } else if (alarm.repeatingMode is Alarm.RepeatingMode.Once) {
                 disableAlarm(alarmId = alarm.alarmId)
             } else if (alarm.repeatingMode is Alarm.RepeatingMode.Days) {
                 setAlarm(

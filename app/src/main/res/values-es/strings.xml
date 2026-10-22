@@ -277,4 +277,12 @@
     <string name="backup_too_new">Esta copia de seguridad se realizó con una versión más reciente de QRAlarm. Actualiza la app y vuelve a intentarlo.</string>
     <string name="backup_import_failed">No se pudo leer la copia de seguridad. Por favor, intenta de nuevo.</string>
     <string name="cancellation_lock_active_use_toggle_to_disable">Bloqueo de cancelación activo: usa el interruptor para desactivarlo.</string>
+
+    <string name="alarm_in_chain">Alarma en cadena %1$d</string>
+    <string name="after_colon">Después:</string>
+    <string name="alarms_chain_disclaimer">Descargo de responsabilidad sobre la cadena de alarmas</string>
+    <string name="alarms_chain_disclaimer_description">Tenga en cuenta que hay casos en los que las alarmas en cadena no se activarán: cuando desactiva la alarma original antes de que se active, cuando desactiva la alarma con una tarea de emergencia o cuando desactiva el escaneo de código para la alarma.</string>
+    <string name="delete_this_alarm_in_chain">¿Eliminar esta alarma en cadena?</string>
+    <string name="next_alarm_in_chain_at">Siguiente alarma en cadena a las:</string>
+    <string name="upcoming_chained_alarm_indication_notification_text">Siguiente alarma en cadena a las %1$s</string>
 </resources>

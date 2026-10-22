@@ -257,4 +257,12 @@
     <string name="backup_too_new">Cadangan ini dibuat dengan versi QRAlarm yang lebih baru. Perbarui aplikasi dan coba lagi.</string>
     <string name="backup_import_failed">Tidak bisa membaca cadangan. Silakan coba lagi.</string>
     <string name="cancellation_lock_active_use_toggle_to_disable">Kunci pembatalan aktif — gunakan tombol sakelar untuk menonaktifkannya</string>
+
+    <string name="alarm_in_chain">Alarm dalam rantai %1$d</string>
+    <string name="after_colon">Setelah:</string>
+    <string name="alarms_chain_disclaimer">Peringatan rantai alarm</string>
+    <string name="alarms_chain_disclaimer_description">Perlu diingat ada kasus-kasus ketika alarm dalam rantai tidak berbunyi: ketika Anda menonaktifkan alarm asli sebelum berbunyi, ketika Anda menonaktifkan alarm dengan tugas darurat atau ketika Anda menonaktifkan pemindaian kode untuk alarm.</string>
+    <string name="delete_this_alarm_in_chain">Hapus alarm ini dalam rantai?</string>
+    <string name="next_alarm_in_chain_at">Alarm berikutnya dalam rantai pada:</string>
+    <string name="upcoming_chained_alarm_indication_notification_text">Alarm berikutnya dalam rantai pada %1$s</string>
 </resources>

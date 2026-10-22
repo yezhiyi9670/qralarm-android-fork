@@ -257,4 +257,12 @@
     <string name="backup_import_failed">อ่านข้อมูลสำรองไม่ได้ โปรดลองอีกครั้ง</string>
     <string name="standalone_app">แอปแยกต่างหาก</string>
     <string name="cancellation_lock_active_use_toggle_to_disable">ล็อกการยกเลิกเปิดอยู่ — ใช้ปุ่มสลับเพื่อปิด</string>
+
+    <string name="alarm_in_chain">การปลุกในชุด %1$d</string>
+    <string name="after_colon">หลังจาก:</string>
+    <string name="alarms_chain_disclaimer">ข้อควรทราบเกี่ยวกับชุดการปลุก</string>
+    <string name="alarms_chain_disclaimer_description">โปรดทราบว่าการปลุกในชุดอาจไม่ทำงานในบางกรณี เช่น เมื่อคุณปิดการปลุกต้นทางก่อนที่การปลุกจะดัง เมื่อคุณปิดการปลุกด้วยภารกิจฉุกเฉิน หรือเมื่อคุณปิดการสแกนโค้ดสำหรับการปลุก</string>
+    <string name="delete_this_alarm_in_chain">ลบการปลุกนี้ในลำดับการปลุกหรือไม่?</string>
+    <string name="next_alarm_in_chain_at">การปลุกถัดไปในชุดเวลา:</string>
+    <string name="upcoming_chained_alarm_indication_notification_text">การปลุกถัดไปในลำดับเวลา %1$s</string>
 </resources>

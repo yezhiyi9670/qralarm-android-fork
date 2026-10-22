@@ -1,7 +1,7 @@
 package com.sweak.qralarm.core.domain.alarm
 
 interface AlarmScheduler {
-    fun setAlarm(alarmId: Long, alarmTimeInMillis: Long, isSnoozeAlarm: Boolean)
+    fun setAlarm(alarmId: Long, alarmTimeInMillis: Long, alarmType: AlarmType)
 
     fun cancelAlarm(alarmId: Long)
 

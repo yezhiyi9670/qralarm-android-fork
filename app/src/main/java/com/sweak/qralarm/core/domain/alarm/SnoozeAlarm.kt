@@ -22,6 +22,7 @@ class SnoozeAlarm @Inject constructor(
                 .toEpochMilli()
 
         alarmsRepository.addOrEditAlarm(
+            chainedAlarms = alarm.chainedAlarms,
             alarm = alarm.copy(
                 snoozeConfig = alarm.snoozeConfig.copy(
                     numberOfSnoozesLeft =
@@ -33,11 +34,13 @@ class SnoozeAlarm @Inject constructor(
             )
         )
 
+        alarmsRepository.clearChainedAlarmsNextTimes(alarmId = alarm.alarmId)
+
         if (snoozeAlarmTimeInMillis != null) {
             alarmScheduler.setAlarm(
                 alarmId = alarm.alarmId,
                 alarmTimeInMillis = snoozeAlarmTimeInMillis,
-                isSnoozeAlarm = true
+                alarmType = AlarmType.SNOOZED
             )
 
             val (alarmHourOfDay, alarmMinute) =
@@ -47,7 +50,7 @@ class SnoozeAlarm @Inject constructor(
                 alarmId = alarm.alarmId,
                 alarmHourOfDay = alarmHourOfDay,
                 alarmMinute = alarmMinute,
-                isSnoozeAlarm = true
+                alarmType = AlarmType.SNOOZED
             )
         }
     }

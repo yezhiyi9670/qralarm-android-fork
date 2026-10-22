@@ -257,4 +257,12 @@
     <string name="backup_too_new">このバックアップはQRAlarmの新しいバージョンで作成されました。アプリを更新して再試行してください。</string>
     <string name="backup_import_failed">バックアップを読み取れませんでした。再試行してください。</string>
     <string name="cancellation_lock_active_use_toggle_to_disable">キャンセルロックが有効です。トグルボタンで無効にしてください。</string>
+
+    <string name="alarm_in_chain">チェーン内のアラーム %1$d</string>
+    <string name="after_colon">以降:</string>
+    <string name="alarms_chain_disclaimer">アラームチェーンの免責事項</string>
+    <string name="alarms_chain_disclaimer_description">アラームチェーンが作動しない場合があります: オリジナルのアラームが鳴る前に無効にした場合、緊急タスクのアラームを無効にした場合、アラームのコードスキャンを無効にした場合。</string>
+    <string name="delete_this_alarm_in_chain">このアラームを連続して削除しますか？</string>
+    <string name="next_alarm_in_chain_at">次のアラームの時刻:</string>
+    <string name="upcoming_chained_alarm_indication_notification_text">次のアラームの時刻: %1$s</string>
 </resources>

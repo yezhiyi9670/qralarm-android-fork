@@ -277,4 +277,12 @@
     <string name="backup_too_new">Questo backup è stato creato con una versione più recente di QRAlarm. Aggiorna l\'app e riprova.</string>
     <string name="backup_import_failed">Impossibile leggere il backup. Riprova.</string>
     <string name="cancellation_lock_active_use_toggle_to_disable">Blocco di annullamento attivo: usa l’interruttore per disattivarlo.</string>
+
+    <string name="alarm_in_chain">Sveglia nella catena %1$d</string>
+    <string name="after_colon">Dopo:</string>
+    <string name="alarms_chain_disclaimer">Esclusione di responsabilità relativa alla catena di sveglie</string>
+    <string name="alarms_chain_disclaimer_description">"Tenete presente che esistono casi in cui le sveglie in catena non si attivano: quando disattivate la sveglia originale prima che si attivi, quando disattivate la sveglia con un'attività di emergenza o quando disattivate la scansione del codice per la sveglia."</string>
+    <string name="delete_this_alarm_in_chain">Eliminare questa sveglia in sequenza?</string>
+    <string name="next_alarm_in_chain_at">Prossima sveglia nella catena alle:</string>
+    <string name="upcoming_chained_alarm_indication_notification_text">Prossima sveglia nella catena alle %1$s</string>
 </resources>

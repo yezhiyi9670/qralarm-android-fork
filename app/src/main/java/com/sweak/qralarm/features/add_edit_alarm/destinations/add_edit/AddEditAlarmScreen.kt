@@ -919,8 +919,11 @@ private fun AddEditAlarmScreenContent(
                                                 )
                                             },
                                             title = stringResource(R.string.alarms_chain),
-                                            description =
-                                                pluralStringResource(R.plurals.alarms_active, 0, 0),
+                                            description = pluralStringResource(
+                                                R.plurals.alarms_active,
+                                                state.chainedAlarms.size,
+                                                state.chainedAlarms.size
+                                            ),
                                             icon = QRAlarmIcons.Chain,
                                             iconContentDescription = stringResource(
                                                 R.string.content_description_chain_icon

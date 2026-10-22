@@ -25,6 +25,7 @@ import com.sweak.qralarm.alarm.util.setAlarmVolume
 import com.sweak.qralarm.core.designsystem.theme.Jacarta
 import com.sweak.qralarm.core.domain.alarm.Alarm
 import com.sweak.qralarm.core.domain.alarm.AlarmsRepository
+import com.sweak.qralarm.core.domain.alarm.AlarmType
 import com.sweak.qralarm.core.domain.alarm.DisableAlarm
 import com.sweak.qralarm.core.domain.alarm.SetAlarm
 import com.sweak.qralarm.core.domain.user.UserDataRepository
@@ -145,7 +146,9 @@ class AlarmService : Service() {
         }
 
         serviceScope.launch {
-            val isSnoozeAlarm = intent.extras?.getBoolean(EXTRA_IS_SNOOZE_ALARM)
+            val alarmType = intent.extras?.getString(EXTRA_ALARM_TYPE)
+                ?.let { type -> runCatching { AlarmType.valueOf(type) }.getOrNull() }
+                ?: AlarmType.REGULAR
 
             if (shouldStopService) {
                 userDataRepository.setAlarmMissedDetected(detected = true)
@@ -155,7 +158,7 @@ class AlarmService : Service() {
 
             alarmsRepository.getAlarm(alarmId = alarmId)?.let {
                 alarm = it
-                if (isAbnormalLaunch(alarm, isSnoozeAlarm)) {
+                if (isAbnormalLaunch(alarm, alarmType)) {
                     handleEarlyServiceStop(alarmId)
                     return@launch
                 }
@@ -166,7 +169,7 @@ class AlarmService : Service() {
 
             // An early delivery is waited out, so that the alarm rings on time and the
             // rescheduling below does not schedule the very same occurrence again:
-            getLaunchDelayInMillis(alarm, isSnoozeAlarm)?.let { launchDelayInMillis ->
+            getLaunchDelayInMillis(alarm, alarmType)?.let { launchDelayInMillis ->
                 if (launchDelayInMillis < 0) delay((-launchDelayInMillis).milliseconds)
             }
 
@@ -193,7 +196,7 @@ class AlarmService : Service() {
                 ContextCompat.RECEIVER_NOT_EXPORTED
             )
 
-            if (isSnoozeAlarm == false) {
+            if (alarmType != AlarmType.SNOOZED) {
                 resetAvailableSnoozes()
             }
 
@@ -206,7 +209,9 @@ class AlarmService : Service() {
                 snoozed = false
             )
 
-            handleAlarmRescheduling()
+            if (alarmType != AlarmType.CHAINED && alarm.chainedAlarms.isEmpty()) {
+                handleAlarmRescheduling()
+            }
 
             adjustAlarmVolume()
 
@@ -276,16 +281,19 @@ class AlarmService : Service() {
         }
     }
 
-    private fun isAbnormalLaunch(alarm: Alarm, isSnoozeAlarm: Boolean?): Boolean {
-        val launchDelayInMillis = getLaunchDelayInMillis(alarm, isSnoozeAlarm) ?: return false
+    private fun isAbnormalLaunch(alarm: Alarm, alarmType: AlarmType): Boolean {
+        val launchDelayInMillis = getLaunchDelayInMillis(alarm, alarmType) ?: return false
 
         return launchDelayInMillis !in -EARLY_LAUNCH_TOLERANCE_MS..ABNORMAL_LAUNCH_TOLERANCE_MS
     }
 
-    private fun getLaunchDelayInMillis(alarm: Alarm, isSnoozeAlarm: Boolean?): Long? {
-        val scheduledTimeInMillis = when {
-            isSnoozeAlarm == true -> alarm.snoozeConfig.nextSnoozedAlarmTimeInMillis
-            else -> alarm.nextAlarmTimeInMillis
+    private fun getLaunchDelayInMillis(alarm: Alarm, alarmType: AlarmType): Long? {
+        val scheduledTimeInMillis = when (alarmType) {
+            AlarmType.SNOOZED -> alarm.snoozeConfig.nextSnoozedAlarmTimeInMillis
+            AlarmType.CHAINED -> alarm.chainedAlarms
+                .firstOrNull { it.nextChainedAlarmTimeInMillis != null }
+                ?.nextChainedAlarmTimeInMillis
+            AlarmType.REGULAR -> alarm.nextAlarmTimeInMillis
         }
         if (scheduledTimeInMillis == null) return null
 
@@ -300,6 +308,12 @@ class AlarmService : Service() {
     }
 
     private suspend fun handleAlarmRescheduling() {
+        // Reaching here with a chain means the occurrence did not ring normally, and the chain
+        // must not fire when its original alarm was missed:
+        if (alarm.chainedAlarms.isNotEmpty()) {
+            alarmsRepository.clearChainedAlarmsNextTimes(alarmId = alarm.alarmId)
+        }
+
         if (alarm.repeatingMode is Alarm.RepeatingMode.Once) {
             disableAlarm(alarmId = alarm.alarmId)
         } else if (alarm.repeatingMode is Alarm.RepeatingMode.Days) {
@@ -405,7 +419,7 @@ class AlarmService : Service() {
 
     companion object {
         const val EXTRA_ALARM_ID = "alarmId"
-        const val EXTRA_IS_SNOOZE_ALARM = "isSnoozeAlarm"
+        const val EXTRA_ALARM_TYPE = "alarmType"
 
         const val ACTION_TEMPORARY_ALARM_MUTE = "com.sweak.qralarm.TEMPORARY_ALARM_MUTE"
         const val EXTRA_TEMPORARY_MUTE_DURATION_SECONDS = "muteDurationSeconds"

@@ -29,6 +29,7 @@ testParameterInjector = "1.25"
 coroutinesTest = "1.11.0"
 assertk = "0.28.1"
 mockk = "1.14.11"
+materialKolor = "4.1.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -80,6 +81,7 @@ test-parameter-injector = { group = "com.google.testparameterinjector", name = "
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
 assertk = { group = "com.willowtreeapps.assertk", name = "assertk", version.ref = "assertk" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+material-kolor = { group = "com.materialkolor", name = "material-kolor", version.ref = "materialKolor" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

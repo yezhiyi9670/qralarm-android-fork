@@ -143,5 +143,52 @@ sealed class AddEditAlarmFlowUserEvent {
     sealed class AlarmsChainSettingsScreenUserEvent : AddEditAlarmFlowUserEvent() {
         data object OnCancelClicked : AlarmsChainSettingsScreenUserEvent()
         data object AddNewChainedAlarmClicked : AlarmsChainSettingsScreenUserEvent()
+
+        data class ChainedAlarmDelayMinutesChanged(
+            val chainedAlarmUiId: String,
+            val delayMinutesIndex: Int
+        ) : AlarmsChainSettingsScreenUserEvent()
+
+        data class AssignCodeForChainedAlarmDialogVisible(
+            val chainedAlarmUiId: String,
+            val isVisible: Boolean
+        ) : AlarmsChainSettingsScreenUserEvent()
+
+        data class EditCodeNameForChainedAlarmDialogVisible(
+            val chainedAlarmUiId: String,
+            val isVisible: Boolean
+        ) : AlarmsChainSettingsScreenUserEvent()
+
+        data class CodeNameForChainedAlarmEdited(
+            val chainedAlarmUiId: String,
+            val newName: String?
+        ) : AlarmsChainSettingsScreenUserEvent()
+
+        data class CodeForChainedAlarmUpdated(
+            val chainedAlarmUiId: String,
+            val code: Code
+        ) : AlarmsChainSettingsScreenUserEvent()
+
+        data class TryScanSpecificCodeForChainedAlarm(
+            val chainedAlarmUiId: String
+        ) : AlarmsChainSettingsScreenUserEvent()
+
+        data class DeleteChainedAlarmDialogVisible(
+            val chainedAlarmUiId: String,
+            val isVisible: Boolean
+        ) : AlarmsChainSettingsScreenUserEvent()
+
+        data class DeleteChainedAlarm(
+            val chainedAlarmUiId: String
+        ) : AlarmsChainSettingsScreenUserEvent()
+
+        data class AlarmsChainDisclaimerDialogVisible(
+            val isVisible: Boolean
+        ) : AlarmsChainSettingsScreenUserEvent()
+
+        data class ChainedAlarmLabelChanged(
+            val chainedAlarmUiId: String,
+            val newLabel: String?
+        ) : AlarmsChainSettingsScreenUserEvent()
     }
 }

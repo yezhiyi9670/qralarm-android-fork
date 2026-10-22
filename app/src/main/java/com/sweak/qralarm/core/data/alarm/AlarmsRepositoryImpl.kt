@@ -1,11 +1,16 @@
 package com.sweak.qralarm.core.data.alarm
 
+import androidx.room.withTransaction
 import com.sweak.qralarm.core.domain.alarm.Alarm
 import com.sweak.qralarm.core.domain.alarm.AlarmsRepository
+import com.sweak.qralarm.core.domain.alarm.ChainedAlarm
 import com.sweak.qralarm.core.domain.alarm.Code
+import com.sweak.qralarm.core.storage.database.QRAlarmDatabase
 import com.sweak.qralarm.core.storage.database.dao.AlarmsDao
+import com.sweak.qralarm.core.storage.database.dao.ChainedAlarmsDao
 import com.sweak.qralarm.core.storage.database.dao.CodesDao
 import com.sweak.qralarm.core.storage.database.model.AlarmEntity
+import com.sweak.qralarm.core.storage.database.model.ChainedAlarmEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -14,11 +19,16 @@ import java.time.DayOfWeek
 import javax.inject.Inject
 
 class AlarmsRepositoryImpl @Inject constructor(
+    private val database: QRAlarmDatabase,
     private val alarmsDao: AlarmsDao,
+    private val chainedAlarmsDao: ChainedAlarmsDao,
     private val codesDao: CodesDao
 ) : AlarmsRepository {
 
-    override suspend fun addOrEditAlarm(alarm: Alarm): Long {
+    override suspend fun addOrEditAlarm(
+        alarm: Alarm,
+        chainedAlarms: List<ChainedAlarm>
+    ): Long = database.withTransaction {
         val upsertedAlarmId = alarmsDao.upsertAlarm(
             alarmEntity = AlarmEntity(
                 alarmId = alarm.alarmId,
@@ -55,7 +65,36 @@ class AlarmsRepositoryImpl @Inject constructor(
             )
         )
 
-        return upsertedAlarmId.takeIf { it > 0 } ?: alarm.alarmId
+        val alarmId = upsertedAlarmId.takeIf { it > 0 } ?: alarm.alarmId
+
+        val existingChainedAlarms = chainedAlarmsDao.getChainedAlarms(parentAlarmId = alarmId)
+        val keptChainedAlarmIds = chainedAlarms
+            .mapNotNull { it.chainedAlarmId.takeIf { id -> id > 0 } }
+            .toSet()
+
+        existingChainedAlarms
+            .filterNot { it.chainedAlarmId in keptChainedAlarmIds }
+            .forEach { chainedAlarm ->
+                chainedAlarmsDao.deleteChainedAlarm(chainedAlarm.chainedAlarmId)
+            }
+
+        chainedAlarms.forEachIndexed { index, chainedAlarm ->
+            chainedAlarmsDao.upsertChainedAlarm(
+                ChainedAlarmEntity(
+                    chainedAlarmId =
+                        chainedAlarm.chainedAlarmId.takeIf { it > 0 } ?: 0,
+                    parentAlarmId = alarmId,
+                    delayMinutes = chainedAlarm.delayMinutes,
+                    assignedCodeId = chainedAlarm.assignedCode?.codeId,
+                    label = chainedAlarm.label,
+                    order = index,
+                    nextChainedAlarmTimeInMillis =
+                        chainedAlarm.nextChainedAlarmTimeInMillis
+                )
+            )
+        }
+
+        alarmId
     }
 
     override suspend fun setAlarmEnabled(alarmId: Long, enabled: Boolean) {
@@ -145,6 +184,49 @@ class AlarmsRepositoryImpl @Inject constructor(
         alarmsDao.deleteAlarm(alarmId = alarmId)
     }
 
+    override suspend fun getChainedAlarm(chainedAlarmId: Long): ChainedAlarm? =
+        chainedAlarmsDao.getChainedAlarm(chainedAlarmId)?.let { entity ->
+            convertChainedAlarmEntity(entity)
+        }
+
+    override suspend fun getChainedAlarmsForAlarm(alarmId: Long): List<ChainedAlarm> {
+        val chainedAlarms = mutableListOf<ChainedAlarm>()
+
+        for (entity in chainedAlarmsDao.getChainedAlarms(parentAlarmId = alarmId)) {
+            chainedAlarms.add(convertChainedAlarmEntity(entity))
+        }
+
+        return chainedAlarms
+    }
+
+    override suspend fun getAllChainedAlarms(): List<ChainedAlarm> {
+        val chainedAlarms = mutableListOf<ChainedAlarm>()
+
+        for (entity in chainedAlarmsDao.getAllChainedAlarms()) {
+            chainedAlarms.add(convertChainedAlarmEntity(entity))
+        }
+
+        return chainedAlarms
+    }
+
+    override suspend fun setChainedAlarmNextTime(chainedAlarmId: Long, nextTimeInMillis: Long?) {
+        chainedAlarmsDao.setChainedAlarmNextTime(
+            chainedAlarmId = chainedAlarmId,
+            nextTimeInMillis = nextTimeInMillis
+        )
+    }
+
+    override suspend fun clearChainedAlarmsNextTimes(alarmId: Long) {
+        chainedAlarmsDao.getChainedAlarms(parentAlarmId = alarmId).forEach { chainedAlarm ->
+            if (chainedAlarm.nextChainedAlarmTimeInMillis != null) {
+                chainedAlarmsDao.setChainedAlarmNextTime(
+                    chainedAlarmId = chainedAlarm.chainedAlarmId,
+                    nextTimeInMillis = null
+                )
+            }
+        }
+    }
+
     private suspend fun convertAlarmEntity(alarmEntity: AlarmEntity): Alarm {
         val repeatingMode = if (alarmEntity.repeatingAlarmDays != null) {
             Alarm.RepeatingMode.Days(
@@ -188,9 +270,21 @@ class AlarmsRepositoryImpl @Inject constructor(
             alarmLabel = alarmEntity.alarmLabel,
             gentleWakeUpDurationInSeconds = alarmEntity.gentleWakeUpDurationInSeconds,
             temporaryMuteDurationInSeconds = alarmEntity.temporaryMuteDurationInSeconds,
-            skipAlarmUntilTimeInMillis = alarmEntity.skipAlarmUntilTimeInMillis
+            skipAlarmUntilTimeInMillis = alarmEntity.skipAlarmUntilTimeInMillis,
+            chainedAlarms = getChainedAlarmsForAlarm(alarmId = alarmEntity.alarmId)
         )
     }
+
+    private suspend fun convertChainedAlarmEntity(
+        chainedAlarmEntity: ChainedAlarmEntity
+    ): ChainedAlarm = ChainedAlarm(
+        chainedAlarmId = chainedAlarmEntity.chainedAlarmId,
+        delayMinutes = chainedAlarmEntity.delayMinutes,
+        assignedCode = resolveCode(chainedAlarmEntity.assignedCodeId),
+        label = chainedAlarmEntity.label,
+        order = chainedAlarmEntity.order,
+        nextChainedAlarmTimeInMillis = chainedAlarmEntity.nextChainedAlarmTimeInMillis
+    )
 
     private suspend fun resolveCode(codeId: Long?): Code? =
         codeId?.let { id ->

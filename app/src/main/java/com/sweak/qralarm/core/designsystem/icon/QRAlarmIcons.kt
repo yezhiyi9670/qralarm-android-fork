@@ -32,6 +32,7 @@ import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Fullscreen
 import androidx.compose.material.icons.outlined.GppGood
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Notifications
@@ -97,4 +98,5 @@ object QRAlarmIcons {
     val ExportBackup = Icons.Outlined.FileDownload
     val ImportBackup = Icons.Outlined.FileUpload
     val Warning = Icons.Outlined.WarningAmber
+    val Info = Icons.Outlined.Info
 }

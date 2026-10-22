@@ -307,4 +307,12 @@
     <string name="emergency_task_description">هل فقدت الرمز أو نسيته؟ يمكنك إكمال هذه المهمة الطويلة لإيقاف المنبه. ما عليك سوى تحريك شريط التمرير حتى يطابق الرقم المستهدف. حظًا موفقًا!</string>
     <string name="start">ابدأ</string>
     <string name="cancellation_lock_active_use_toggle_to_disable">قفل الإلغاء مفعّل — استخدم زر التبديل لتعطيله</string>
+
+    <string name="alarm_in_chain">المنبه في السلسلة %1$d</string>
+    <string name="after_colon">بعد:</string>
+    <string name="alarms_chain_disclaimer">إخلاء مسؤولية سلسلة المنبهات</string>
+    <string name="alarms_chain_disclaimer_description">يُرجى الانتباه إلى أن المنبهات في السلسلة قد لا تعمل في بعض الحالات: إذا عطّلت المنبه الأصلي قبل أن يرن، أو عطّلت المنبه باستخدام مهمة طوارئ، أو عطّلت مسح الرموز للمنبه.</string>
+    <string name="delete_this_alarm_in_chain">هل تريد حذف هذا المنبه من سلسلة المنبهات؟</string>
+    <string name="next_alarm_in_chain_at">موعد المنبه التالي في السلسلة:</string>
+    <string name="upcoming_chained_alarm_indication_notification_text">المنبه التالي في التسلسل عند %1$s</string>
 </resources>

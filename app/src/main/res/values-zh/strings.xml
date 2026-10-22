@@ -257,4 +257,12 @@
     <string name="backup_too_new">此备份是用较新版本的QRAlarm创建的。请更新应用程序后再试。</string>
     <string name="backup_import_failed">无法读取备份。请重试。</string>
     <string name="cancellation_lock_active_use_toggle_to_disable">取消锁定已启用，请使用开关按钮将其关闭</string>
+
+    <string name="alarm_in_chain">链中的闹钟 %1$d</string>
+    <string name="after_colon">之后：</string>
+    <string name="alarms_chain_disclaimer">闹钟链免责声明</string>
+    <string name="alarms_chain_disclaimer_description">请注意，在某些情况下，链中的闹钟不会触发：当您在原始闹钟响起前将其禁用时；当您通过紧急任务禁用闹钟时；或者当您为该闹钟禁用代码扫描功能时。</string>
+    <string name="delete_this_alarm_in_chain">要删除此链中的闹钟吗？</string>
+    <string name="next_alarm_in_chain_at">链中的下一个闹钟在：</string>
+    <string name="upcoming_chained_alarm_indication_notification_text">链中的下一个闹钟在 %1$s</string>
 </resources>

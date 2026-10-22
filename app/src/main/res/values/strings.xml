@@ -280,4 +280,12 @@
     <string name="backup_not_recognized">This file is not a QRAlarm backup.</string>
     <string name="backup_too_new">This backup was made with a newer version of QRAlarm. Update the app and try again.</string>
     <string name="backup_import_failed">Couldn\'t read the backup. Please try again.</string>
+
+    <string name="alarm_in_chain">Alarm in chain %1$d</string>
+    <string name="after_colon">After:</string>
+    <string name="alarms_chain_disclaimer">Alarms chain disclaimer</string>
+    <string name="alarms_chain_disclaimer_description">Keep in mind there are cases when alarms in chain will not fire: when you disable the original alarm before it fires, when you disable the alarm with an emergency task or when you disable code scanning for the alarm.</string>
+    <string name="delete_this_alarm_in_chain">Delete this alarm in chain?</string>
+    <string name="next_alarm_in_chain_at">Next alarm in chain at:</string>
+    <string name="upcoming_chained_alarm_indication_notification_text">Next alarm in chain at %1$s</string>
 </resources>

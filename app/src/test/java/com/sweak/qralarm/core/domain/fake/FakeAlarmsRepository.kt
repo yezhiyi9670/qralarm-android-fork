@@ -2,6 +2,7 @@ package com.sweak.qralarm.core.domain.fake
 
 import com.sweak.qralarm.core.domain.alarm.Alarm
 import com.sweak.qralarm.core.domain.alarm.AlarmsRepository
+import com.sweak.qralarm.core.domain.alarm.ChainedAlarm
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -10,11 +11,26 @@ class FakeAlarmsRepository : AlarmsRepository {
     private val alarms = mutableMapOf<Long, Alarm>()
     private var lastAlarmId = 0L
 
-    override suspend fun addOrEditAlarm(alarm: Alarm): Long {
+    suspend fun addOrEditAlarm(alarm: Alarm): Long = addOrEditAlarm(alarm, emptyList())
+
+    override suspend fun addOrEditAlarm(
+        alarm: Alarm,
+        chainedAlarms: List<ChainedAlarm>
+    ): Long {
         val alarmId = if (alarm.alarmId == 0L) lastAlarmId + 1 else alarm.alarmId
         lastAlarmId = maxOf(lastAlarmId, alarmId)
 
-        alarms[alarmId] = alarm.copy(alarmId = alarmId)
+        alarms[alarmId] = alarm.copy(
+            alarmId = alarmId,
+            chainedAlarms = chainedAlarms.mapIndexed { index, chainedAlarm ->
+                chainedAlarm.copy(
+                    chainedAlarmId = if (chainedAlarm.chainedAlarmId == 0L) {
+                        index.toLong() + 1
+                    } else chainedAlarm.chainedAlarmId,
+                    order = index
+                )
+            }
+        )
 
         return alarmId
     }
@@ -53,5 +69,38 @@ class FakeAlarmsRepository : AlarmsRepository {
 
     override suspend fun setAlarmRingtone(alarmId: Long, ringtone: Alarm.Ringtone) {
         alarms.computeIfPresent(alarmId) { _, alarm -> alarm.copy(ringtone = ringtone) }
+    }
+
+    override suspend fun getChainedAlarm(chainedAlarmId: Long): ChainedAlarm? = null
+
+    override suspend fun getChainedAlarmsForAlarm(alarmId: Long): List<ChainedAlarm> =
+        alarms[alarmId]?.chainedAlarms.orEmpty()
+
+    override suspend fun getAllChainedAlarms(): List<ChainedAlarm> =
+        alarms.values.flatMap { it.chainedAlarms }
+
+    override suspend fun setChainedAlarmNextTime(
+        chainedAlarmId: Long,
+        nextTimeInMillis: Long?
+    ) {
+        alarms.replaceAll { _, alarm ->
+            alarm.copy(
+                chainedAlarms = alarm.chainedAlarms.map { chainedAlarm ->
+                    if (chainedAlarm.chainedAlarmId == chainedAlarmId) {
+                        chainedAlarm.copy(nextChainedAlarmTimeInMillis = nextTimeInMillis)
+                    } else chainedAlarm
+                }
+            )
+        }
+    }
+
+    override suspend fun clearChainedAlarmsNextTimes(alarmId: Long) {
+        alarms.computeIfPresent(alarmId) { _, alarm ->
+            alarm.copy(
+                chainedAlarms = alarm.chainedAlarms.map {
+                    it.copy(nextChainedAlarmTimeInMillis = null)
+                }
+            )
+        }
     }
 }

@@ -14,6 +14,7 @@ import com.sweak.qralarm.alarm.ACTION_WIDGET_MIDNIGHT_UPDATE
 import com.sweak.qralarm.alarm.WIDGET_MIDNIGHT_UPDATE_REQUEST_CODE
 import com.sweak.qralarm.core.domain.alarm.Alarm
 import com.sweak.qralarm.core.domain.alarm.AlarmsRepository
+import com.sweak.qralarm.core.domain.alarm.ChainedAlarm
 import com.sweak.qralarm.core.ui.getDayString
 import com.sweak.qralarm.core.ui.getTimeString
 import com.sweak.qralarm.features.widget.QRAlarmWidget.Companion.BOTTOM_TEXT_KEY
@@ -91,19 +92,20 @@ class QRAlarmWidgetUpdater @Inject constructor(
     }
 
     private suspend fun resolveWidgetData(): ResolvedWidgetData {
-        val (nextAlarm, isSnoozed) = getNextAlarm()
+        val upcomingAlarm = getUpcomingAlarm()
         val is24h = DateFormat.is24HourFormat(appContext)
 
-        return when {
-            nextAlarm == null -> ResolvedWidgetData(
+        return when (upcomingAlarm) {
+            null -> ResolvedWidgetData(
                 state = WidgetState.NO_ALARM,
                 topLabel = appContext.getString(R.string.no_alarms),
                 timeText = NO_TIME_PLACEHOLDER,
                 bottomText = appContext.getString(R.string.widget_tap_to_add)
             )
 
-            isSnoozed -> {
-                val timeMillis = nextAlarm.snoozeConfig.nextSnoozedAlarmTimeInMillis ?: 0L
+            is UpcomingAlarm.Snoozed -> {
+                val timeMillis =
+                    upcomingAlarm.alarm.snoozeConfig.nextSnoozedAlarmTimeInMillis ?: 0L
                 ResolvedWidgetData(
                     state = WidgetState.SNOOZED,
                     topLabel = appContext.getString(R.string.snooze),
@@ -112,11 +114,22 @@ class QRAlarmWidgetUpdater @Inject constructor(
                 )
             }
 
-            else -> {
-                val timeMillis = nextAlarm.nextAlarmTimeInMillis
+            is UpcomingAlarm.Chained -> {
+                val timeMillis = upcomingAlarm.chainedAlarm.nextChainedAlarmTimeInMillis ?: 0L
+                ResolvedWidgetData(
+                    state = WidgetState.CHAINED,
+                    topLabel = upcomingAlarm.chainedAlarm.label
+                        ?: appContext.getString(R.string.alarms_chain),
+                    timeText = getTimeString(timeMillis, is24h),
+                    bottomText = resolveDayString(timeMillis)
+                )
+            }
+
+            is UpcomingAlarm.Regular -> {
+                val timeMillis = upcomingAlarm.alarm.nextAlarmTimeInMillis
                 ResolvedWidgetData(
                     state = WidgetState.NORMAL,
-                    topLabel = nextAlarm.alarmLabel
+                    topLabel = upcomingAlarm.alarm.alarmLabel
                         ?: appContext.getString(R.string.widget_next_alarm),
                     timeText = getTimeString(timeMillis, is24h),
                     bottomText = resolveDayString(timeMillis)
@@ -137,30 +150,51 @@ class QRAlarmWidgetUpdater @Inject constructor(
         }
     }
 
-    private suspend fun getNextAlarm(): Pair<Alarm?, Boolean> {
+    /** Whichever of the three kinds of upcoming alarm comes first. */
+    private suspend fun getUpcomingAlarm(): UpcomingAlarm? {
         val alarmsList = alarmsRepository.getAllAlarms().first()
 
-        val enabledNextAlarm: Alarm? = alarmsList
+        val nextRegularAlarm = alarmsList
             .filter { it.isAlarmEnabled }
             .minByOrNull { it.nextAlarmTimeInMillis }
+            ?.let { UpcomingAlarm.Regular(alarm = it) }
 
-        val snoozedNextAlarm = alarmsList
+        val nextSnoozedAlarm = alarmsList
             .filter {
-                it.snoozeConfig.nextSnoozedAlarmTimeInMillis != null &&
-                        it.snoozeConfig.isAlarmSnoozed
+                it.snoozeConfig.isAlarmSnoozed &&
+                    it.snoozeConfig.nextSnoozedAlarmTimeInMillis != null
             }
             .minByOrNull { it.snoozeConfig.nextSnoozedAlarmTimeInMillis ?: Long.MAX_VALUE }
+            ?.let { UpcomingAlarm.Snoozed(alarm = it) }
 
-        val enabledNextAlarmTime = enabledNextAlarm?.nextAlarmTimeInMillis ?: Long.MAX_VALUE
-        val snoozedNextAlarmTime = snoozedNextAlarm?.snoozeConfig?.nextSnoozedAlarmTimeInMillis
-            ?: Long.MAX_VALUE
+        val nextChainedAlarm = alarmsList
+            .flatMap { alarm ->
+                alarm.chainedAlarms
+                    .filter { it.isArmed }
+                    .map { chainedAlarm -> UpcomingAlarm.Chained(alarm, chainedAlarm) }
+            }
+            .minByOrNull { it.chainedAlarm.nextChainedAlarmTimeInMillis ?: Long.MAX_VALUE }
 
-        return if (enabledNextAlarm == null && snoozedNextAlarm == null) {
-            Pair(null, false)
-        } else if (enabledNextAlarmTime < snoozedNextAlarmTime) {
-            Pair(enabledNextAlarm, false)
-        } else {
-            Pair(snoozedNextAlarm, true)
+        return listOfNotNull(nextRegularAlarm, nextSnoozedAlarm, nextChainedAlarm)
+            .minByOrNull { it.timeInMillis }
+    }
+
+    private sealed class UpcomingAlarm {
+        abstract val timeInMillis: Long
+
+        data class Regular(val alarm: Alarm) : UpcomingAlarm() {
+            override val timeInMillis: Long
+                get() = alarm.nextAlarmTimeInMillis
+        }
+
+        data class Snoozed(val alarm: Alarm) : UpcomingAlarm() {
+            override val timeInMillis: Long
+                get() = alarm.snoozeConfig.nextSnoozedAlarmTimeInMillis ?: Long.MAX_VALUE
+        }
+
+        data class Chained(val alarm: Alarm, val chainedAlarm: ChainedAlarm) : UpcomingAlarm() {
+            override val timeInMillis: Long
+                get() = chainedAlarm.nextChainedAlarmTimeInMillis ?: Long.MAX_VALUE
         }
     }
 

@@ -267,4 +267,12 @@
     <string name="backup_too_new">Dieses Backup wurde mit einer neueren Version von QRAlarm erstellt. Bitte aktualisieren Sie die App und versuchen Sie es erneut.</string>
     <string name="backup_import_failed">Das Backup konnte nicht gelesen werden. Bitte versuchen Sie es erneut.</string>
     <string name="cancellation_lock_active_use_toggle_to_disable">Sperre gegen Beenden aktiv – zum Deaktivieren den Schalter verwenden.</string>
+
+    <string name="alarm_in_chain">Alarm in der Kette %1$d</string>
+    <string name="after_colon">Nachher:</string>
+    <string name="alarms_chain_disclaimer">Haftungsausschluss für Alarmketten</string>
+    <string name="alarms_chain_disclaimer_description">Beachten Sie, dass es Fälle gibt, in denen Alarme in einer Kette nicht ausgelöst werden: wenn Sie den ursprünglichen Alarm deaktivieren, bevor er ausgelöst wird, wenn Sie den Alarm mit einer Notfallaufgabe deaktivieren oder wenn Sie die Code-Überprüfung für den Alarm deaktivieren.</string>
+    <string name="delete_this_alarm_in_chain">Diesen Alarm in der Kette löschen?</string>
+    <string name="next_alarm_in_chain_at">Nächster Alarm in der Kette um:</string>
+    <string name="upcoming_chained_alarm_indication_notification_text">Nächster Alarm in der Kette um %1$s</string>
 </resources>

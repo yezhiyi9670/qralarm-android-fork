@@ -12,6 +12,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.graphics.toColorInt
 import com.sweak.qralarm.core.domain.user.model.Theme
 
 private val QRAlarmTheme = darkColorScheme(
@@ -54,6 +55,20 @@ fun QRAlarmTheme(
                     dynamicDarkColorScheme(context)
                 } else {
                     dynamicLightColorScheme(context)
+                }
+            } else if (theme is Theme.Custom) {
+                val customPrimaryColor = runCatching {
+                    Color(theme.primaryColor.toColorInt())
+                }.getOrNull()
+
+                if (customPrimaryColor != null) {
+                    com.materialkolor.rememberDynamicColorScheme(
+                        customPrimaryColor,
+                        isSystemInDarkTheme(),
+                        false
+                    )
+                } else {
+                    QRAlarmTheme
                 }
             } else QRAlarmTheme
 

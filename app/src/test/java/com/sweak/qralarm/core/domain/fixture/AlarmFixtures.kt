@@ -1,6 +1,7 @@
 package com.sweak.qralarm.core.domain.fixture
 
 import com.sweak.qralarm.core.domain.alarm.Alarm
+import com.sweak.qralarm.core.domain.alarm.ChainedAlarm
 import com.sweak.qralarm.core.domain.alarm.Code
 
 fun alarm(
@@ -24,7 +25,8 @@ fun alarm(
     assignedCode: Code? = null,
     isUsingCode: Boolean = assignedCode != null,
     cancelLockDurationInMinutes: Int = 0,
-    skipAlarmUntilTimeInMillis: Long? = null
+    skipAlarmUntilTimeInMillis: Long? = null,
+    chainedAlarms: List<ChainedAlarm> = emptyList()
 ) = Alarm(
     alarmId = 0,
     alarmHourOfDay = alarmHourOfDay,
@@ -54,5 +56,22 @@ fun alarm(
     alarmLabel = null,
     gentleWakeUpDurationInSeconds = 0,
     temporaryMuteDurationInSeconds = 0,
-    skipAlarmUntilTimeInMillis = skipAlarmUntilTimeInMillis
+    skipAlarmUntilTimeInMillis = skipAlarmUntilTimeInMillis,
+    chainedAlarms = chainedAlarms
+)
+
+fun chainedAlarm(
+    chainedAlarmId: Long = 0,
+    delayMinutes: Int = 5,
+    assignedCode: Code? = null,
+    label: String? = null,
+    order: Int = 0,
+    nextChainedAlarmTimeInMillis: Long? = null
+): ChainedAlarm = ChainedAlarm(
+    chainedAlarmId = chainedAlarmId,
+    delayMinutes = delayMinutes,
+    assignedCode = assignedCode,
+    label = label,
+    order = order,
+    nextChainedAlarmTimeInMillis = nextChainedAlarmTimeInMillis
 )

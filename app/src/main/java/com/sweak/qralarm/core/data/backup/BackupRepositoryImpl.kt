@@ -7,18 +7,32 @@ import com.sweak.qralarm.core.domain.backup.BackupRepository
 import com.sweak.qralarm.core.domain.backup.RestoreIdMappings
 import com.sweak.qralarm.core.storage.database.QRAlarmDatabase
 import com.sweak.qralarm.core.storage.database.dao.AlarmsDao
+import com.sweak.qralarm.core.storage.database.dao.ChainedAlarmsDao
 import com.sweak.qralarm.core.storage.database.dao.CodesDao
+import com.sweak.qralarm.core.storage.database.model.ChainedAlarmEntity
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 class BackupRepositoryImpl @Inject constructor(
     private val qrAlarmDatabase: QRAlarmDatabase,
     private val alarmsDao: AlarmsDao,
+    private val chainedAlarmsDao: ChainedAlarmsDao,
     private val codesDao: CodesDao
 ) : BackupRepository {
 
-    override suspend fun readAlarmsForBackup(): List<BackupAlarm> =
-        alarmsDao.getAllAlarms().first().map { it.toBackupAlarm() }
+    override suspend fun readAlarmsForBackup(): List<BackupAlarm> {
+        val backupAlarms = mutableListOf<BackupAlarm>()
+
+        for (alarmEntity in alarmsDao.getAllAlarms().first()) {
+            backupAlarms.add(
+                alarmEntity.toBackupAlarm(
+                    chainedAlarms = chainedAlarmsDao.getChainedAlarms(alarmEntity.alarmId)
+                )
+            )
+        }
+
+        return backupAlarms
+    }
 
     override suspend fun readCodesForBackup(): List<BackupCode> =
         codesDao.getAllCodes().first().map { it.toBackupCode() }
@@ -56,6 +70,23 @@ class BackupRepositoryImpl @Inject constructor(
             )
 
             alarmIdMap[backupAlarm.alarmId] = newAlarmId
+
+            if (backupAlarm.chainedAlarms.isNotEmpty()) {
+                chainedAlarmsDao.insertChainedAlarms(
+                    backupAlarm.chainedAlarms.mapIndexed { index, chainedAlarm ->
+                        ChainedAlarmEntity(
+                            parentAlarmId = newAlarmId,
+                            delayMinutes = chainedAlarm.delayMinutes,
+                            assignedCodeId = chainedAlarm.assignedCodeId?.let {
+                                codeIdMap[it]
+                            },
+                            label = chainedAlarm.label,
+                            order = index,
+                            nextChainedAlarmTimeInMillis = null
+                        )
+                    }
+                )
+            }
         }
 
         RestoreIdMappings(alarmIdMap = alarmIdMap, codeIdMap = codeIdMap)

@@ -53,7 +53,7 @@ class QRAlarmWidget : GlanceAppWidget() {
         val BOTTOM_TEXT_KEY = stringPreferencesKey("bottomTextKey")
     }
 
-    enum class WidgetState { NORMAL, SNOOZED, NO_ALARM }
+    enum class WidgetState { NORMAL, SNOOZED, CHAINED, NO_ALARM }
 }
 
 private val nobelColorProvider = ColorProvider(day = Nobel, night = Nobel)
@@ -89,10 +89,12 @@ private fun WidgetContent(
                     maxLines = 1
                 )
                 if (state != QRAlarmWidget.WidgetState.NO_ALARM) {
-                    val iconRes = if (state == QRAlarmWidget.WidgetState.NORMAL) {
-                        R.drawable.ic_qralarm
-                    } else {
-                        R.drawable.ic_snooze
+                    val iconRes = when (state) {
+                        QRAlarmWidget.WidgetState.NORMAL,
+                        QRAlarmWidget.WidgetState.CHAINED -> R.drawable.ic_qralarm
+
+                        QRAlarmWidget.WidgetState.SNOOZED -> R.drawable.ic_snooze
+                        QRAlarmWidget.WidgetState.NO_ALARM -> R.drawable.ic_qralarm
                     }
                     Image(
                         provider = ImageProvider(iconRes),

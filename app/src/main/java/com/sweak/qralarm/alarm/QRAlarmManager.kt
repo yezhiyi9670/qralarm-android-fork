@@ -14,11 +14,12 @@ import com.sweak.qralarm.R
 import com.sweak.qralarm.alarm.receiver.PostUpcomingAlarmNotificationReceiver
 import com.sweak.qralarm.alarm.service.AlarmService
 import com.sweak.qralarm.alarm.service.AlarmService.Companion.EXTRA_ALARM_ID
-import com.sweak.qralarm.alarm.service.AlarmService.Companion.EXTRA_IS_SNOOZE_ALARM
+import com.sweak.qralarm.alarm.service.AlarmService.Companion.EXTRA_ALARM_TYPE
 import com.sweak.qralarm.app.activity.MainActivity
 import com.sweak.qralarm.core.designsystem.theme.Jacarta
 import com.sweak.qralarm.core.domain.alarm.AlarmNotifier
 import com.sweak.qralarm.core.domain.alarm.AlarmScheduler
+import com.sweak.qralarm.core.domain.alarm.AlarmType
 import com.sweak.qralarm.core.ui.getTimeString
 
 class QRAlarmManager(
@@ -26,10 +27,10 @@ class QRAlarmManager(
     private val notificationManager: NotificationManager,
     private val context: Context
 ) : AlarmScheduler, AlarmNotifier {
-    override fun setAlarm(alarmId: Long, alarmTimeInMillis: Long, isSnoozeAlarm: Boolean) {
+    override fun setAlarm(alarmId: Long, alarmTimeInMillis: Long, alarmType: AlarmType) {
         val alarmIntent = Intent(context, AlarmService::class.java).apply {
             putExtra(EXTRA_ALARM_ID, alarmId)
-            putExtra(EXTRA_IS_SNOOZE_ALARM, isSnoozeAlarm)
+            putExtra(EXTRA_ALARM_TYPE, alarmType.name)
         }
 
         val alarmPendingIntent =
@@ -75,7 +76,7 @@ class QRAlarmManager(
         alarmId: Long,
         alarmHourOfDay: Int,
         alarmMinute: Int,
-        isSnoozeAlarm: Boolean
+        alarmType: AlarmType
     ) {
         val upcomingAlarmIndicationPendingIntent = PendingIntent.getActivity(
             context,
@@ -97,10 +98,13 @@ class QRAlarmManager(
             )
             setContentText(
                 context.getString(
-                    if (isSnoozeAlarm) {
-                        R.string.upcoming_snoozed_alarm_indication_notification_text
-                    } else {
-                        R.string.upcoming_alarm_indication_notification_text
+                    when (alarmType) {
+                        AlarmType.REGULAR ->
+                            R.string.upcoming_alarm_indication_notification_text
+                        AlarmType.SNOOZED ->
+                            R.string.upcoming_snoozed_alarm_indication_notification_text
+                        AlarmType.CHAINED ->
+                            R.string.upcoming_chained_alarm_indication_notification_text
                     },
                     getTimeString(
                         hourOfDay = alarmHourOfDay,

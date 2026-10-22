@@ -23,7 +23,8 @@ data class Alarm(
     val alarmLabel: String?,
     val gentleWakeUpDurationInSeconds: Int,
     val temporaryMuteDurationInSeconds: Int,
-    val skipAlarmUntilTimeInMillis: Long?
+    val skipAlarmUntilTimeInMillis: Long?,
+    val chainedAlarms: List<ChainedAlarm> = emptyList()
 ) {
     sealed class RepeatingMode {
         data object Once : RepeatingMode()

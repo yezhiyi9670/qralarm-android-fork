@@ -47,5 +47,6 @@ data class AlarmDto(
     val isEmergencyTaskEnabled: Boolean = true,
     val alarmLabel: String? = null,
     val gentleWakeUpDurationInSeconds: Int = DEFAULT_GENTLE_WAKE_UP_DURATION_IN_SECONDS,
-    val temporaryMuteDurationInSeconds: Int = DEFAULT_TEMPORARY_MUTE_DURATION_IN_SECONDS
+    val temporaryMuteDurationInSeconds: Int = DEFAULT_TEMPORARY_MUTE_DURATION_IN_SECONDS,
+    val chainedAlarms: List<ChainedAlarmDto> = emptyList()
 )

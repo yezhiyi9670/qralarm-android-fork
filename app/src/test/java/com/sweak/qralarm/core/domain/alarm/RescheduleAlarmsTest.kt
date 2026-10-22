@@ -57,6 +57,22 @@ class RescheduleAlarmsTest {
                 alarmsRepository = alarmsRepository,
                 clock = clock
             ),
+            scheduleChainedAlarm = ScheduleChainedAlarm(
+                alarmsRepository = alarmsRepository,
+                alarmScheduler = alarmScheduler,
+                alarmNotifier = alarmNotifier,
+                setAlarm = SetAlarm(
+                    alarmScheduler = alarmScheduler,
+                    alarmNotifier = alarmNotifier,
+                    alarmsRepository = alarmsRepository,
+                    clock = clock
+                ),
+                disableAlarm = DisableAlarm(
+                    alarmScheduler = alarmScheduler,
+                    alarmsRepository = alarmsRepository
+                ),
+                clock = clock
+            ),
             clock = clock
         )(rescheduleAlarmsIfMissedByFiveMinutes = rescheduleAlarmsIfMissedByFiveMinutes)
     }
@@ -152,7 +168,7 @@ class RescheduleAlarmsTest {
             alarmScheduler.setAlarm(
                 alarmId = alarmId,
                 alarmTimeInMillis = epochMillisAt(SATURDAY.atTime(7, 30)),
-                isSnoozeAlarm = false
+                alarmType = AlarmType.REGULAR
             )
         }
     }
@@ -179,7 +195,7 @@ class RescheduleAlarmsTest {
             alarmScheduler.setAlarm(
                 alarmId = alarmId,
                 alarmTimeInMillis = epochMillisAt(SATURDAY.atTime(7, 30)),
-                isSnoozeAlarm = false
+                alarmType = AlarmType.REGULAR
             )
         }
     }
@@ -295,7 +311,7 @@ class RescheduleAlarmsTest {
             alarmScheduler.setAlarm(
                 alarmId = alarmId,
                 alarmTimeInMillis = epochMillisAt(NEXT_MONDAY.atTime(7, 30)),
-                isSnoozeAlarm = false
+                alarmType = AlarmType.REGULAR
             )
         }
     }
@@ -350,7 +366,7 @@ class RescheduleAlarmsTest {
             alarmScheduler.setAlarm(
                 alarmId = alarmId,
                 alarmTimeInMillis = epochMillisAt(SATURDAY.atTime(7, 40)),
-                isSnoozeAlarm = true
+                alarmType = AlarmType.SNOOZED
             )
         }
     }
@@ -402,7 +418,7 @@ class RescheduleAlarmsTest {
             alarmScheduler.setAlarm(
                 alarmId = alarmId,
                 alarmTimeInMillis = epochMillisAt(SATURDAY.atTime(7, 40)),
-                isSnoozeAlarm = true
+                alarmType = AlarmType.SNOOZED
             )
         }
     }
@@ -494,7 +510,7 @@ class RescheduleAlarmsTest {
             alarmScheduler.setAlarm(
                 alarmId = alarmId,
                 alarmTimeInMillis = epochMillisAt(NEXT_MONDAY.atTime(7, 30)),
-                isSnoozeAlarm = false
+                alarmType = AlarmType.REGULAR
             )
         }
     }

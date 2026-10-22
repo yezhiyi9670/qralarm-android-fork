@@ -10,6 +10,7 @@ class DisableAlarm @Inject constructor(
         val alarm = alarmsRepository.getAlarm(alarmId = alarmId)
 
         alarmScheduler.cancelAlarm(alarmId = alarmId)
+        alarmsRepository.clearChainedAlarmsNextTimes(alarmId = alarmId)
 
         if (alarm?.isAlarmEnabled == true) {
             alarmsRepository.setAlarmEnabled(
