@@ -53,9 +53,10 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /**
- * A hue wheel with tint, shade and alpha sliders, mirroring the custom color picker of the
- * original app: the wheel selects a fully saturated hue and the three sliders move it towards
- * white, towards black, and change its alpha.
+ * A hue wheel with tint and shade sliders, mirroring the custom color picker of the original
+ * app: the wheel selects a fully saturated hue and the sliders move it towards white and
+ * towards black. Both sliders show the base hue on the left, so the position of the thumb is
+ * what the resulting color looks like.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,10 +76,9 @@ fun ColorPickerBottomSheet(
     }
     var tint by remember { mutableFloatStateOf(0f) }
     var shade by remember { mutableFloatStateOf(0f) }
-    var alpha by remember { mutableFloatStateOf(initialColor.alpha.coerceIn(0f, 1f)) }
 
-    val resultingColor = remember(baseHueColor, tint, shade, alpha) {
-        composeColor(baseHueColor, tint, shade, alpha)
+    val resultingColor = remember(baseHueColor, tint, shade) {
+        composeColor(baseHueColor, tint, shade)
     }
     val hue = remember(baseHueColor) { baseHueColor.toHsvHue() }
 
@@ -117,7 +117,7 @@ fun ColorPickerBottomSheet(
             Spacer(modifier = Modifier.height(MaterialTheme.space.mediumLarge))
 
             GradientSlider(
-                colors = listOf(Color.White, baseHueColor),
+                colors = listOf(baseHueColor, Color.White),
                 value = tint,
                 onValueChange = { tint = it },
                 description = stringResource(R.string.custom_color)
@@ -126,21 +126,9 @@ fun ColorPickerBottomSheet(
             Spacer(modifier = Modifier.height(MaterialTheme.space.medium))
 
             GradientSlider(
-                colors = listOf(Color.Black, baseHueColor),
+                colors = listOf(baseHueColor, Color.Black),
                 value = shade,
                 onValueChange = { shade = it },
-                description = stringResource(R.string.custom_color)
-            )
-
-            Spacer(modifier = Modifier.height(MaterialTheme.space.medium))
-
-            GradientSlider(
-                colors = listOf(
-                    baseHueColor.copy(alpha = 0f),
-                    baseHueColor.copy(alpha = 1f)
-                ),
-                value = alpha,
-                onValueChange = { alpha = it },
                 description = stringResource(R.string.custom_color)
             )
 
@@ -322,8 +310,7 @@ private fun Color.toHsvHue(): Float {
 private fun composeColor(
     baseColor: Color,
     tint: Float,
-    shade: Float,
-    alpha: Float
+    shade: Float
 ): Color {
     fun channel(value: Float): Float {
         val tinted = (value * 255f) + ((255f - (value * 255f)) * tint.coerceIn(0f, 1f))
@@ -334,6 +321,6 @@ private fun composeColor(
         red = channel(baseColor.red).coerceIn(0f, 1f),
         green = channel(baseColor.green).coerceIn(0f, 1f),
         blue = channel(baseColor.blue).coerceIn(0f, 1f),
-        alpha = alpha.coerceIn(0f, 1f)
+        alpha = 1f
     )
 }

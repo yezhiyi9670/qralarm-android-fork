@@ -8,6 +8,7 @@ import assertk.assertions.isNotNull
 import assertk.assertions.prop
 import com.sweak.qralarm.core.domain.fake.FakeAlarmsRepository
 import com.sweak.qralarm.core.domain.fixture.alarm
+import com.sweak.qralarm.core.domain.fixture.chainedAlarm
 import com.sweak.qralarm.core.domain.fixture.epochMillisAt
 import com.sweak.qralarm.core.domain.fixture.fixedClock
 import com.sweak.qralarm.core.domain.user.UserDataRepository
@@ -87,6 +88,47 @@ class RescheduleAlarmsTest {
     private fun verifyNotReportedAsMissed() {
         verify(exactly = 0) { alarmNotifier.notifyAboutMissedAlarm() }
         verify { userDataRepository wasNot Called }
+    }
+
+    @Test
+    fun `given a chain in progress, when rescheduling, then the alarm is not reported as missed`() = runTest {
+        // Given
+        every { alarmScheduler.canScheduleExactAlarms() } returns true
+        val alarmId = alarmsRepository.addOrEditAlarm(
+            alarm(
+                alarmHourOfDay = 7,
+                alarmMinute = 30,
+                isAlarmEnabled = true,
+                repeatingMode = MONDAYS_AND_SATURDAYS,
+                // The parent alarm already rang, so its own time is in the past:
+                nextAlarmTimeInMillis = epochMillisAt(SATURDAY.atTime(7, 30)),
+                chainedAlarms = listOf(
+                    chainedAlarm(
+                        chainedAlarmId = 1,
+                        delayMinutes = 5,
+                        order = 0,
+                        nextChainedAlarmTimeInMillis = epochMillisAt(SATURDAY.atTime(7, 35))
+                    )
+                )
+            )
+        )
+
+        // When
+        rescheduleAlarms(
+            now = SATURDAY.atTime(7, 32),
+            rescheduleAlarmsIfMissedByFiveMinutes = false
+        )
+
+        // Then
+        verifyNotReportedAsMissed()
+        assertThat(alarmsRepository.getAlarm(alarmId = alarmId)?.isAlarmEnabled).isEqualTo(true)
+        verify {
+            alarmScheduler.setAlarm(
+                alarmId = alarmId,
+                alarmTimeInMillis = epochMillisAt(SATURDAY.atTime(7, 35)),
+                alarmType = AlarmType.CHAINED
+            )
+        }
     }
 
     @Test

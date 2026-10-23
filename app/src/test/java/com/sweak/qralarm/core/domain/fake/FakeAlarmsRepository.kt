@@ -11,7 +11,8 @@ class FakeAlarmsRepository : AlarmsRepository {
     private val alarms = mutableMapOf<Long, Alarm>()
     private var lastAlarmId = 0L
 
-    suspend fun addOrEditAlarm(alarm: Alarm): Long = addOrEditAlarm(alarm, emptyList())
+    suspend fun addOrEditAlarm(alarm: Alarm): Long =
+        addOrEditAlarm(alarm, alarm.chainedAlarms)
 
     override suspend fun addOrEditAlarm(
         alarm: Alarm,

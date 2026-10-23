@@ -26,6 +26,14 @@ class RescheduleAlarms @Inject constructor(
             val currentTimeInMillis = clock.millis()
 
             alarmsRepository.getAllAlarms().first().forEach { alarm ->
+                // An armed chained alarm owns the pending intent of the whole alarm, so the
+                // alarm's own next time is intentionally left in the past while the chain is
+                // running. Judge the chain by the chained alarm's time instead.
+                if (alarm.chainedAlarms.any { it.isArmed }) {
+                    scheduleChainedAlarm(alarmId = alarm.alarmId, isRescheduling = true)
+                    return@forEach
+                }
+
                 if (alarm.snoozeConfig.isAlarmSnoozed &&
                     alarm.snoozeConfig.nextSnoozedAlarmTimeInMillis != null
                 ) {
@@ -100,10 +108,6 @@ class RescheduleAlarms @Inject constructor(
                             isReschedulingMissedAlarm = false
                         )
                     }
-                }
-
-                if (alarm.chainedAlarms.any { it.isArmed }) {
-                    scheduleChainedAlarm(alarmId = alarm.alarmId, isRescheduling = true)
                 }
             }
         }

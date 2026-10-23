@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -171,12 +172,16 @@ fun ChainedAlarmCard(
                             contentDescription = stringResource(R.string.edit_code_name)
                         )
                     }
-                    TextButton(onClick = onAssignCodeClicked) {
+                    TextButton(
+                        onClick = onAssignCodeClicked,
+                        colors = chipTextButtonColors()
+                    ) {
                         Text(text = stringResource(R.string.assign_new_code))
                     }
                 } else {
                     TextButton(
                         onClick = onAssignCodeClicked,
+                        colors = chipTextButtonColors(),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(
@@ -194,6 +199,16 @@ fun ChainedAlarmCard(
     }
 }
 
+/**
+ * A [TextButton] inside the card. The QRAlarm theme maps primary to the same purple as the card
+ * container, which made the default text button colors invisible, so the button follows the
+ * card content color instead.
+ */
+@Composable
+private fun chipTextButtonColors() = ButtonDefaults.textButtonColors(
+    contentColor = LocalContentColor.current
+)
+
 @Composable
 private fun DelayMinutesPicker(
     selectedDelayMinutes: Int,
@@ -203,7 +218,10 @@ private fun DelayMinutesPicker(
     var isMenuExpanded by remember { mutableStateOf(false) }
 
     Box {
-        TextButton(onClick = { isMenuExpanded = true }) {
+        TextButton(
+            onClick = { isMenuExpanded = true },
+            colors = chipTextButtonColors()
+        ) {
             Text(
                 text = pluralStringResource(
                     R.plurals.minutes,
