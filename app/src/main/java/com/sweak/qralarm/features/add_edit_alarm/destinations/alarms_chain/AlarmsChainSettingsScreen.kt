@@ -58,6 +58,7 @@ import com.sweak.qralarm.features.add_edit_alarm.destinations.alarms_chain.compo
 import com.sweak.qralarm.features.add_edit_alarm.destinations.alarms_chain.components.ChainedAlarmCard
 import com.sweak.qralarm.features.add_edit_alarm.destinations.alarms_chain.components.OriginalAlarmCard
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun AlarmsChainSettingsScreen(
     addEditAlarmViewModel: AddEditAlarmViewModel,
