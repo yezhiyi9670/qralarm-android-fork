@@ -1,5 +1,6 @@
 package com.sweak.qralarm.core.data.backup
 
+import android.database.sqlite.SQLiteException
 import androidx.room.withTransaction
 import com.sweak.qralarm.core.domain.backup.BackupAlarm
 import com.sweak.qralarm.core.domain.backup.BackupCode
@@ -11,6 +12,7 @@ import com.sweak.qralarm.core.storage.database.dao.ChainedAlarmsDao
 import com.sweak.qralarm.core.storage.database.dao.CodesDao
 import com.sweak.qralarm.core.storage.database.model.ChainedAlarmEntity
 import kotlinx.coroutines.flow.first
+import java.io.IOException
 import javax.inject.Inject
 
 class BackupRepositoryImpl @Inject constructor(
@@ -40,6 +42,15 @@ class BackupRepositoryImpl @Inject constructor(
     override suspend fun getAllAlarmIds(): List<Long> = alarmsDao.getAllAlarmIds()
 
     override suspend fun replaceAll(
+        codes: List<BackupCode>,
+        alarms: List<BackupAlarm>
+    ): RestoreIdMappings = try {
+        replaceAllInTransaction(codes = codes, alarms = alarms)
+    } catch (sqliteException: SQLiteException) {
+        throw IOException(sqliteException)
+    }
+
+    private suspend fun replaceAllInTransaction(
         codes: List<BackupCode>,
         alarms: List<BackupAlarm>
     ): RestoreIdMappings = qrAlarmDatabase.withTransaction {
