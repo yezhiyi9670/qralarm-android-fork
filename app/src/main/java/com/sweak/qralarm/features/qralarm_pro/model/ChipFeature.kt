@@ -13,10 +13,6 @@ data class ChipFeature(
 
 val qrAlarmProChipFeatures = listOf(
     ChipFeature(
-        titleResourceId = R.string.alarms_chain,
-        icon = { QRAlarmIcons.Chain }
-    ),
-    ChipFeature(
         titleResourceId = R.string.do_not_leave_alarm,
         icon = { QRAlarmIcons.DoNotLeaveAlarm }
     ),
@@ -31,9 +27,5 @@ val qrAlarmProChipFeatures = listOf(
     ChipFeature(
         titleResourceId = R.string.keep_ringer_on,
         icon = { QRAlarmIcons.Sound }
-    ),
-    ChipFeature(
-        titleResourceId = R.string.custom_theme,
-        icon = { QRAlarmIcons.Theme }
     )
 )

@@ -13,12 +13,6 @@ data class CarouselFeature(
 
 val qrAlarmProCarouselFeatures = listOf(
     CarouselFeature(
-        titleResourceId = R.string.alarms_chain,
-        descriptionResourceId = R.string.alarms_chain_description,
-        animatedResourceId = R.drawable.alarms_chain,
-        animationDurationMillis = 9600L
-    ),
-    CarouselFeature(
         titleResourceId = R.string.do_not_leave_alarm,
         descriptionResourceId = R.string.do_not_leave_alarm_description,
         animatedResourceId = R.drawable.do_not_leave_alarm,
@@ -41,12 +35,6 @@ val qrAlarmProCarouselFeatures = listOf(
         descriptionResourceId = R.string.keep_ringer_on_description,
         animatedResourceId = R.drawable.keep_ringer_on,
         animationDurationMillis = 6310L
-    ),
-    CarouselFeature(
-        titleResourceId = R.string.custom_theme,
-        descriptionResourceId = R.string.custom_theme_description,
-        animatedResourceId = R.drawable.custom_theme,
-        animationDurationMillis = 3000L
     )
 )
 // Note: animationDurationMillis have 400ms subtracted for proper fad-out between carousel items.
