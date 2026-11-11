@@ -12,7 +12,7 @@ import com.sweak.qralarm.core.storage.database.model.AlarmEntity
 import com.sweak.qralarm.core.storage.database.model.ChainedAlarmEntity
 import com.sweak.qralarm.core.storage.database.model.CodeEntity
 
-const val QRALARM_DATABASE_VERSION = 11
+const val QRALARM_DATABASE_VERSION = 12
 
 @Database(
     entities = [AlarmEntity::class, CodeEntity::class, ChainedAlarmEntity::class],
@@ -24,7 +24,8 @@ const val QRALARM_DATABASE_VERSION = 11
         AutoMigration(from = 4, to = 5),
         AutoMigration(from = 5, to = 6),
         AutoMigration(from = 6, to = 7),
-        AutoMigration(from = 10, to = 11)
+        AutoMigration(from = 10, to = 11),
+        AutoMigration(from = 11, to = 12)
     ]
 )
 abstract class QRAlarmDatabase : RoomDatabase() {

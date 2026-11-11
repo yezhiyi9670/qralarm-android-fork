@@ -50,6 +50,8 @@ data class BackupAlarm(
     /** The name of the alarm's [com.sweak.qralarm.core.domain.alarm.Alarm.Ringtone]. */
     val ringtone: String,
     val hasCustomRingtoneFile: Boolean,
+    /** The file name the custom ringtone had when it was picked, only for showing it. */
+    val customRingtoneName: String? = null,
     val alarmVolumePercentage: Int,
     val areVibrationsEnabled: Boolean,
     val isUsingCode: Boolean,

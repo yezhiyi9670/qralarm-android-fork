@@ -39,6 +39,12 @@ class AddOrEditAlarm @Inject constructor(
             }
 
             alarmsRepository.setAlarmRingtoneUri(alarmId = alarmId, uri = savedRingtoneUri)
+            alarmsRepository.setAlarmCustomRingtoneName(
+                alarmId = alarmId,
+                name = alarmRingtoneStorage.getDisplayName(
+                    contentUriString = temporaryCustomRingtoneContentUriString
+                )
+            )
 
             Result.Success(alarmId = alarmId)
         } catch (exception: Exception) {

@@ -39,6 +39,8 @@ data class AddEditAlarmFlowState(
     val ringtone: Ringtone = Ringtone.GENTLE_GUITAR,
     val availableRingtonesWithPlaybackState: Map<Ringtone, Boolean> = emptyMap(),
     val currentCustomAlarmRingtoneUri: Uri? = null,
+    /** The file name of the custom ringtone, shown under the ringtone setting. */
+    val customAlarmRingtoneName: String? = null,
     val temporaryCustomAlarmRingtoneUri: Uri? = null,
     val alarmVolumePercentage: Int? = null,
     val isChooseAlarmRingtoneConfigDialogVisible: Boolean = false,

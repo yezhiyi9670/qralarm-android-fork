@@ -13,6 +13,8 @@ data class Alarm(
     val snoozeConfig: SnoozeConfig,
     val ringtone: Ringtone,
     val customRingtoneUriString: String?,
+    /** The file name the custom ringtone had when it was picked, shown to the user. */
+    val customRingtoneName: String? = null,
     val alarmVolumeMode: AlarmVolumeMode,
     val areVibrationsEnabled: Boolean,
     val isUsingCode: Boolean,

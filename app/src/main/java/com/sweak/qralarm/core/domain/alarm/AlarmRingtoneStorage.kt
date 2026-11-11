@@ -4,6 +4,12 @@ import java.io.InputStream
 
 interface AlarmRingtoneStorage {
     /**
+     * Tries to read the display name the picked document carries, e.g. "my_song.mp3". The name is
+     * only used for showing which file an alarm rings with, so any failure returns null.
+     */
+    suspend fun getDisplayName(contentUriString: String): String?
+
+    /**
      * Copies the picker-returned content:// URI into app storage for [alarmId]. Returns the
      * resulting file:// URI string. Throws IOException/SecurityException/NullPointerException
      * on failure.

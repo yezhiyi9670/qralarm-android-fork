@@ -34,6 +34,7 @@ data class AlarmEntity(
     val nextSnoozedAlarmTimeInMillis: Long?,
     val ringtone: String,
     val customRingtoneUriString: String?,
+    val customRingtoneName: String? = null,
     @ColumnInfo(defaultValue = "0") val alarmVolumePercentage: Int,
     val areVibrationsEnabled: Boolean,
     val isUsingCode: Boolean,

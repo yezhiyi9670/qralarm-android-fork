@@ -119,6 +119,9 @@ class AddOrEditAlarmTest {
         every {
             alarmRingtoneStorage.saveContentUriForAlarm("picked-ringtone-uri", alarmId = any())
         } answers { "ringtone-uri-for-${secondArg<Long>()}" }
+        coEvery {
+            alarmRingtoneStorage.getDisplayName("picked-ringtone-uri")
+        } returns "my_song.mp3"
 
         // When
         val result = addOrEditAlarm(
@@ -132,6 +135,11 @@ class AddOrEditAlarmTest {
             .isNotNull()
             .prop(Alarm::customRingtoneUriString)
             .isEqualTo("ringtone-uri-for-${result.alarmId}")
+
+        assertThat(alarmsRepository.getAlarm(result.alarmId))
+            .isNotNull()
+            .prop(Alarm::customRingtoneName)
+            .isEqualTo("my_song.mp3")
     }
 
     enum class HandledSaveFailure(val exception: Exception) {

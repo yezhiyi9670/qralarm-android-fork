@@ -3,9 +3,12 @@ package com.sweak.qralarm.core.data.alarm
 import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.core.net.toUri
 import com.sweak.qralarm.core.domain.alarm.AlarmRingtoneStorage
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -20,6 +23,35 @@ class AlarmRingtoneStorageImpl @Inject constructor(
 ) : AlarmRingtoneStorage {
 
     private val storageContext = context.createDeviceProtectedStorageContext()
+
+    override suspend fun getDisplayName(contentUriString: String): String? =
+        withContext(Dispatchers.IO) {
+            val uri = contentUriString.toUri()
+
+            if (uri.scheme == "file") {
+                return@withContext uri.path?.let { path -> File(path).name }
+            }
+
+            try {
+                context.contentResolver.query(
+                    uri,
+                    arrayOf(OpenableColumns.DISPLAY_NAME),
+                    null,
+                    null,
+                    null
+                ).use { cursor ->
+                    val nameIndex = cursor?.getColumnIndex(OpenableColumns.DISPLAY_NAME) ?: -1
+
+                    if (cursor != null && nameIndex >= 0 && cursor.moveToFirst()) {
+                        cursor.getString(nameIndex)
+                    } else {
+                        null
+                    }
+                }
+            } catch (_: Exception) {
+                null
+            }
+        }
 
     override fun saveContentUriForAlarm(contentUriString: String, alarmId: Long): String {
         val file = ringtoneFile(alarmId = alarmId)

@@ -607,7 +607,10 @@ private fun AddEditAlarmScreenContent(
                                 )
                             },
                             title = stringResource(R.string.ringtone),
-                            choiceName = getAlarmRingtoneString(state.ringtone)
+                            choiceName = getAlarmRingtoneString(state.ringtone),
+                            description = state.customAlarmRingtoneName.takeIf {
+                                state.ringtone == Ringtone.CUSTOM_SOUND
+                            }
                         )
 
                         HorizontalDivider(

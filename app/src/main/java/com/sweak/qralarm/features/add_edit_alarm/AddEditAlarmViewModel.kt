@@ -10,6 +10,7 @@ import com.sweak.qralarm.alarm.QRAlarmManager
 import com.sweak.qralarm.core.domain.alarm.AddOrEditAlarm
 import com.sweak.qralarm.core.domain.alarm.Alarm
 import com.sweak.qralarm.core.domain.alarm.Alarm.Ringtone
+import com.sweak.qralarm.core.domain.alarm.AlarmRingtoneStorage
 import com.sweak.qralarm.core.domain.alarm.AlarmsRepository
 import com.sweak.qralarm.core.domain.alarm.AVAILABLE_CHAINED_ALARM_DELAYS_MINUTES
 import com.sweak.qralarm.core.domain.alarm.ChainedAlarm
@@ -61,6 +62,7 @@ class AddEditAlarmViewModel @AssistedInject constructor(
     @Assisted private val idOfAlarm: Long,
     private val savedStateHandle: SavedStateHandle,
     private val alarmRingtonePlayer: AlarmRingtonePlayer,
+    private val alarmRingtoneStorage: AlarmRingtoneStorage,
     private val userDataRepository: UserDataRepository,
     private val alarmsRepository: AlarmsRepository,
     private val codesRepository: CodesRepository,
@@ -218,6 +220,7 @@ class AddEditAlarmViewModel @AssistedInject constructor(
                             availableRingtonesWithPlaybackState = availableRingtonesWithPlaybackState,
                             ringtone = savedRingtone,
                             currentCustomAlarmRingtoneUri = alarm.customRingtoneUriString?.toUri(),
+                            customAlarmRingtoneName = alarm.customRingtoneName,
                             alarmVolumePercentage =
                                 if (alarm.alarmVolumeMode is Alarm.AlarmVolumeMode.Custom) {
                                     alarm.alarmVolumeMode.volumePercentage
@@ -688,10 +691,14 @@ class AddEditAlarmViewModel @AssistedInject constructor(
                 event.customRingtoneUri?.let { retrievedUri ->
                     hasUnsavedChanges = true
 
+                    val retrievedRingtoneName =
+                        alarmRingtoneStorage.getDisplayName(retrievedUri.toString())
+
                     _state.update { currentState ->
                         currentState.copy(
                             ringtone = Ringtone.CUSTOM_SOUND,
-                            temporaryCustomAlarmRingtoneUri = retrievedUri
+                            temporaryCustomAlarmRingtoneUri = retrievedUri,
+                            customAlarmRingtoneName = retrievedRingtoneName
                         )
                     }
 
@@ -1299,11 +1306,12 @@ class AddEditAlarmViewModel @AssistedInject constructor(
         // Saving a new alarm does not arm it: an alarm that is enabled on the spot can be hard to
         // cancel right away, since stopping it may require scanning a code. An edited alarm keeps
         // the state it already had, so editing does not silently arm or disarm anything.
-        val isAlarmEnabled = if (idOfAlarm == 0L) {
-            false
+        val existingAlarm = if (idOfAlarm == 0L) {
+            null
         } else {
-            alarmsRepository.getAlarm(alarmId = idOfAlarm)?.isAlarmEnabled == true
+            alarmsRepository.getAlarm(alarmId = idOfAlarm)
         }
+        val isAlarmEnabled = existingAlarm?.isAlarmEnabled == true
 
         val alarmToSave = Alarm(
             alarmId = idOfAlarm,
@@ -1324,6 +1332,7 @@ class AddEditAlarmViewModel @AssistedInject constructor(
             ),
             ringtone = currentState.ringtone,
             customRingtoneUriString = currentState.currentCustomAlarmRingtoneUri?.toString(),
+            customRingtoneName = existingAlarm?.customRingtoneName,
             alarmVolumeMode = if (currentState.alarmVolumePercentage != null) {
                 Alarm.AlarmVolumeMode.Custom(
                     volumePercentage = currentState.alarmVolumePercentage

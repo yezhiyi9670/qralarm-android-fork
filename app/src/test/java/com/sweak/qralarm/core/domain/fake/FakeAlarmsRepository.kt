@@ -68,6 +68,10 @@ class FakeAlarmsRepository : AlarmsRepository {
         alarms.computeIfPresent(alarmId) { _, alarm -> alarm.copy(customRingtoneUriString = uri) }
     }
 
+    override suspend fun setAlarmCustomRingtoneName(alarmId: Long, name: String?) {
+        alarms.computeIfPresent(alarmId) { _, alarm -> alarm.copy(customRingtoneName = name) }
+    }
+
     override suspend fun setAlarmRingtone(alarmId: Long, ringtone: Alarm.Ringtone) {
         alarms.computeIfPresent(alarmId) { _, alarm -> alarm.copy(ringtone = ringtone) }
     }

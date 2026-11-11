@@ -48,6 +48,7 @@ class AlarmsRepositoryImpl @Inject constructor(
                 nextSnoozedAlarmTimeInMillis = alarm.snoozeConfig.nextSnoozedAlarmTimeInMillis,
                 ringtone = alarm.ringtone.name,
                 customRingtoneUriString = alarm.customRingtoneUriString,
+                customRingtoneName = alarm.customRingtoneName,
                 alarmVolumePercentage =
                     if (alarm.alarmVolumeMode is Alarm.AlarmVolumeMode.Custom) {
                         alarm.alarmVolumeMode.volumePercentage
@@ -148,6 +149,14 @@ class AlarmsRepositoryImpl @Inject constructor(
         alarmsDao.getAlarm(alarmId = alarmId).firstOrNull()?.let { alarmEntity ->
             alarmsDao.upsertAlarm(
                 alarmEntity = alarmEntity.copy(customRingtoneUriString = uri)
+            )
+        }
+    }
+
+    override suspend fun setAlarmCustomRingtoneName(alarmId: Long, name: String?) {
+        alarmsDao.getAlarm(alarmId = alarmId).firstOrNull()?.let { alarmEntity ->
+            alarmsDao.upsertAlarm(
+                alarmEntity = alarmEntity.copy(customRingtoneName = name)
             )
         }
     }
@@ -257,6 +266,7 @@ class AlarmsRepositoryImpl @Inject constructor(
             ),
             ringtone = Alarm.Ringtone.valueOf(alarmEntity.ringtone),
             customRingtoneUriString = alarmEntity.customRingtoneUriString,
+            customRingtoneName = alarmEntity.customRingtoneName,
             alarmVolumeMode = alarmEntity.alarmVolumePercentage.run {
                 if (this < 10) Alarm.AlarmVolumeMode.System
                 else Alarm.AlarmVolumeMode.Custom(volumePercentage = this)

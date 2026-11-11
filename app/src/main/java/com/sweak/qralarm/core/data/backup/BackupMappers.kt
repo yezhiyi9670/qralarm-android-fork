@@ -32,6 +32,7 @@ fun AlarmEntity.toBackupAlarm(
     snoozeDurationInMinutes = snoozeDurationInMinutes,
     ringtone = ringtone,
     hasCustomRingtoneFile = customRingtoneUriString != null,
+    customRingtoneName = customRingtoneName,
     alarmVolumePercentage = alarmVolumePercentage,
     areVibrationsEnabled = areVibrationsEnabled,
     isUsingCode = isUsingCode,
@@ -81,6 +82,7 @@ fun BackupAlarm.toAlarmEntity(assignedCodeId: Long?): AlarmEntity = AlarmEntity(
     ringtone = ringtone,
     // Rebuilt by RestoreBackup once the file has been unpacked to its new location.
     customRingtoneUriString = null,
+    customRingtoneName = customRingtoneName,
     alarmVolumePercentage = alarmVolumePercentage,
     areVibrationsEnabled = areVibrationsEnabled,
     isUsingCode = isUsingCode,
@@ -128,6 +130,7 @@ fun BackupAlarm.toAlarmDto(): AlarmDto = AlarmDto(
     snoozeDurationInMinutes = snoozeDurationInMinutes,
     ringtone = ringtone,
     hasCustomRingtoneFile = hasCustomRingtoneFile,
+    customRingtoneName = customRingtoneName,
     alarmVolumePercentage = alarmVolumePercentage,
     areVibrationsEnabled = areVibrationsEnabled,
     isUsingCode = isUsingCode,
@@ -164,6 +167,7 @@ fun AlarmDto.toBackupAlarm(): BackupAlarm = BackupAlarm(
     ringtone = (Alarm.Ringtone.entries.find { it.name == ringtone }
         ?: Alarm.Ringtone.GENTLE_GUITAR).name,
     hasCustomRingtoneFile = hasCustomRingtoneFile,
+    customRingtoneName = customRingtoneName,
     alarmVolumePercentage = alarmVolumePercentage,
     areVibrationsEnabled = areVibrationsEnabled,
     isUsingCode = isUsingCode,

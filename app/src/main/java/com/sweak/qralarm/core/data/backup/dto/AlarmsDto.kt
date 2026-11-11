@@ -38,6 +38,8 @@ data class AlarmDto(
      * could no longer be read when the backup was made.
      */
     val hasCustomRingtoneFile: Boolean = false,
+    /** Only for showing which file the alarm rings with, so it is optional. */
+    val customRingtoneName: String? = null,
     val alarmVolumePercentage: Int = 0,
     val areVibrationsEnabled: Boolean = true,
     val isUsingCode: Boolean = false,
