@@ -53,6 +53,7 @@ import com.sweak.qralarm.core.designsystem.theme.Jacarta
 import com.sweak.qralarm.core.designsystem.theme.QRAlarmTheme
 import com.sweak.qralarm.core.designsystem.theme.isQRAlarmTheme
 import com.sweak.qralarm.core.designsystem.theme.space
+import com.sweak.qralarm.core.ui.components.DeleteCodeBottomSheet
 import com.sweak.qralarm.core.ui.components.EditCodeNameBottomSheet
 import com.sweak.qralarm.core.ui.compose_util.OnResume
 import com.sweak.qralarm.core.ui.model.Code
@@ -268,12 +269,16 @@ fun CodesManagementScreenContent(
 
                     OtherCodesCard(
                         codes = state.otherCodes,
+                        usedCodeIds = state.usedCodeIds,
                         isPickingDefault = state.isPickingDefault,
                         onEditClicked = { code ->
                             onEvent(CodesManagementScreenUserEvent.EditCodeNameClicked(code))
                         },
                         onCodePickedAsDefault = { code ->
                             onEvent(CodesManagementScreenUserEvent.CodePickedAsDefault(code))
+                        },
+                        onDeleteClicked = { code ->
+                            onEvent(CodesManagementScreenUserEvent.DeleteCodeClicked(code))
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -292,6 +297,18 @@ fun CodesManagementScreenContent(
             },
             onDismissRequest = {
                 onEvent(CodesManagementScreenUserEvent.CodeNameEditDismissed)
+            }
+        )
+    }
+
+    state.codeBeingDeleted?.let { code ->
+        DeleteCodeBottomSheet(
+            code = code,
+            onConfirmClicked = {
+                onEvent(CodesManagementScreenUserEvent.DeleteCodeConfirmed)
+            },
+            onDismissRequest = {
+                onEvent(CodesManagementScreenUserEvent.DeleteCodeDismissed)
             }
         )
     }

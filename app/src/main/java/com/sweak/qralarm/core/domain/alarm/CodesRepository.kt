@@ -15,6 +15,10 @@ interface CodesRepository {
     suspend fun setDefaultAlarmCode(value: String?, name: String?)
     suspend fun setDefaultAlarmCodeById(codeId: Long?)
 
-    suspend fun cleanupUnreferencedCodes()
+    /** Ids of the codes that an alarm or an alarm in a chain is using right now. */
+    fun getAssignedCodeIdsFlow(): Flow<List<Long>>
+
+    suspend fun deleteCode(codeId: Long)
+
     suspend fun migrateLegacyDefaultAlarmCode()
 }

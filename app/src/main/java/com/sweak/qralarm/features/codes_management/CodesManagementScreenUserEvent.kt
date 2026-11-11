@@ -12,6 +12,9 @@ sealed class CodesManagementScreenUserEvent {
     data class EditCodeNameClicked(val code: Code) : CodesManagementScreenUserEvent()
     data class CodeNameEditConfirmed(val newName: String?) : CodesManagementScreenUserEvent()
     data object CodeNameEditDismissed : CodesManagementScreenUserEvent()
+    data class DeleteCodeClicked(val code: Code) : CodesManagementScreenUserEvent()
+    data object DeleteCodeConfirmed : CodesManagementScreenUserEvent()
+    data object DeleteCodeDismissed : CodesManagementScreenUserEvent()
     data class CameraPermissionDeniedDialogVisible(val isVisible: Boolean) :
         CodesManagementScreenUserEvent()
 

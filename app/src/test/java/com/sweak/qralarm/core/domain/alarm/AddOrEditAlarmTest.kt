@@ -14,7 +14,6 @@ import com.sweak.qralarm.core.domain.fixture.alarm
 import io.mockk.Called
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
@@ -99,21 +98,6 @@ class AddOrEditAlarmTest {
             .isNotNull()
             .prop(Alarm::assignedCode)
             .isNull()
-    }
-
-    @Test
-    fun `given alarm, when saving, then unreferenced codes are cleaned up after the alarm is stored`() = runTest {
-        // Given
-        val alarm = alarm()
-
-        // When
-        addOrEditAlarm(alarm)
-
-        // Then
-        coVerifyOrder {
-            alarmsRepository.addOrEditAlarm(any(), any())
-            codesRepository.cleanupUnreferencedCodes()
-        }
     }
 
     @Test

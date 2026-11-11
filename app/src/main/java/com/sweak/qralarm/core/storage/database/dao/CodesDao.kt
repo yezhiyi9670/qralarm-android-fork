@@ -31,15 +31,15 @@ interface CodesDao {
 
     @Query(
         """
-        DELETE FROM code
-        WHERE codeId NOT IN (SELECT assignedCodeId FROM alarm WHERE assignedCodeId IS NOT NULL)
-        AND codeId NOT IN (
-            SELECT assignedCodeId FROM chainedAlarm WHERE assignedCodeId IS NOT NULL
-        )
-        AND codeId != COALESCE(:defaultCodeId, -1)
+        SELECT assignedCodeId FROM alarm WHERE assignedCodeId IS NOT NULL
+        UNION
+        SELECT assignedCodeId FROM chainedAlarm WHERE assignedCodeId IS NOT NULL
         """
     )
-    suspend fun deleteUnreferencedCodes(defaultCodeId: Long?)
+    fun getAssignedCodeIds(): Flow<List<Long>>
+
+    @Query("DELETE FROM code WHERE codeId = :codeId")
+    suspend fun deleteCode(codeId: Long)
 
     @Query("DELETE FROM code")
     suspend fun deleteAllCodes()

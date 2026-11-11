@@ -24,21 +24,23 @@ class CodesManagementViewModel @Inject constructor(
         viewModelScope.launch {
             combine(
                 codesRepository.getDefaultAlarmCodeFlow(),
-                codesRepository.getCodesFlow()
-            ) { defaultCode, allCodes ->
+                codesRepository.getCodesFlow(),
+                codesRepository.getAssignedCodeIdsFlow()
+            ) { defaultCode, allCodes, assignedCodeIds ->
                 val defaultUi = defaultCode?.let {
                     Code(id = it.codeId, value = it.value, name = it.name)
                 }
                 val othersUi = allCodes
                     .filter { it.codeId != defaultCode?.codeId }
                     .map { Code(id = it.codeId, value = it.value, name = it.name) }
-                defaultUi to othersUi
-            }.collect { (defaultUi, othersUi) ->
+                Triple(defaultUi, othersUi, assignedCodeIds.toSet())
+            }.collect { (defaultUi, othersUi, usedCodeIds) ->
                 _state.update { currentState ->
                     currentState.copy(
                         isLoading = false,
                         defaultAlarmCode = defaultUi,
-                        otherCodes = othersUi
+                        otherCodes = othersUi,
+                        usedCodeIds = usedCodeIds
                     )
                 }
             }
@@ -79,6 +81,26 @@ class CodesManagementViewModel @Inject constructor(
 
             is CodesManagementScreenUserEvent.CodeNameEditDismissed -> {
                 _state.update { it.copy(codeBeingEdited = null) }
+            }
+
+            is CodesManagementScreenUserEvent.DeleteCodeClicked -> {
+                _state.update { it.copy(codeBeingDeleted = event.code) }
+            }
+
+            is CodesManagementScreenUserEvent.DeleteCodeConfirmed -> {
+                val code = _state.value.codeBeingDeleted
+
+                _state.update { it.copy(codeBeingDeleted = null) }
+
+                if (code != null) {
+                    viewModelScope.launch {
+                        codesRepository.deleteCode(code.id)
+                    }
+                }
+            }
+
+            is CodesManagementScreenUserEvent.DeleteCodeDismissed -> {
+                _state.update { it.copy(codeBeingDeleted = null) }
             }
 
             is CodesManagementScreenUserEvent.CameraPermissionDeniedDialogVisible -> {

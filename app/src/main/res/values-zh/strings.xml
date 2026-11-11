@@ -80,6 +80,8 @@
     <string name="notifications_permission_required_description">通知权限用于通知显示您的闹钟。请进入设置并手动授予通知权限。</string>
     <string name="delete_alarm">删除闹钟</string>
     <string name="delete_this_alarm">确定删除此闹钟吗?</string>
+    <string name="delete_this_code">确定删除此代码吗?</string>
+    <string name="delete_this_code_description">目前没有任何闹钟在使用此代码。删除后无法恢复。</string>
     <string name="delete">删除</string>
     <string name="discard_changes">放弃更改并退出?</string>
     <string name="discard_changes_description">对此闹钟所做的任何变更都将被舍弃，确定要直接返回吗?</string>
@@ -228,7 +230,7 @@
     <string name="widget_tap_to_add">点击添加闹钟</string>
     <string name="widget_next_alarm">下一个闹钟</string>
     <string name="codes_management">代码管理</string>
-    <string name="codes_management_description">所有用于闹钟的代码。默认代码会自动应用于新创建的闹钟。</string>
+    <string name="codes_management_description">所有为闹钟保存的代码，包括当前没有闹钟使用的代码。默认代码会自动应用于新创建的闹钟。</string>
     <string name="edit_code_name">编辑代码名称</string>
     <string name="edit_code_name_description">给此代码起一个容易记住的名称，以便在查看多个闹钟时能一目了然地分辨出不同的代码。</string>
     <string name="enter_code_name">输入代码名称…</string>

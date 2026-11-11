@@ -118,6 +118,8 @@
     <string name="notifications_permission_required_description">Notifications permission is required for notifying about your alarms. In order to grant the permission go to settings and grant the notifications permission manually.</string>
     <string name="delete_alarm">Delete alarm</string>
     <string name="delete_this_alarm">Delete this alarm?</string>
+    <string name="delete_this_code">Delete this code?</string>
+    <string name="delete_this_code_description">No alarm is using this code right now. Removing it cannot be undone.</string>
     <string name="delete">Delete</string>
     <string name="discard_changes">Discard changes?</string>
     <string name="discard_changes_description">Any changes made to this alarm will be discarded and not saved. Are you sure you want to discard?</string>
@@ -212,7 +214,7 @@
     <string name="default_alarm_code">Default alarm code</string>
     <string name="clear_default_code">Clear default code</string>
     <string name="codes_management">Codes management</string>
-    <string name="codes_management_description">All codes used across your alarms. The default code is applied automatically to newly created alarms.</string>
+    <string name="codes_management_description">All codes saved for your alarms, including the ones no alarm uses right now. The default code is applied automatically to newly created alarms.</string>
     <string name="edit_code_name">Edit code name</string>
     <string name="edit_code_name_description">Give this code an easy-to-remember name so you can tell codes apart at a glance across your alarms.</string>
     <string name="enter_code_name">Enter code name…</string>

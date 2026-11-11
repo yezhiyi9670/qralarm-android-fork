@@ -6,7 +6,9 @@ data class CodesManagementScreenState(
     val isLoading: Boolean = true,
     val defaultAlarmCode: Code? = null,
     val otherCodes: List<Code> = emptyList(),
+    val usedCodeIds: Set<Long> = emptySet(),
     val isPickingDefault: Boolean = false,
     val codeBeingEdited: Code? = null,
-    val isCameraPermissionDeniedDialogVisible: Boolean = false
+    val isCameraPermissionDeniedDialogVisible: Boolean = false,
+    val codeBeingDeleted: Code? = null
 )

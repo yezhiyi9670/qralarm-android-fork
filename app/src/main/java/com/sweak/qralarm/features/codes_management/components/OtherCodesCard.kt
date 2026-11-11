@@ -20,9 +20,11 @@ import com.sweak.qralarm.core.ui.model.Code
 @Composable
 fun OtherCodesCard(
     codes: List<Code>,
+    usedCodeIds: Set<Long>,
     isPickingDefault: Boolean,
     onEditClicked: (Code) -> Unit,
     onCodePickedAsDefault: (Code) -> Unit,
+    onDeleteClicked: (Code) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(modifier = modifier) {
@@ -69,13 +71,22 @@ fun OtherCodesCard(
                                 onTrailingIconClicked = { onCodePickedAsDefault(code) }
                             )
                         } else {
+                            // A code that an alarm uses cannot be removed - that alarm would be
+                            // left without one:
+                            val onDelete: (() -> Unit)? = if (code.id in usedCodeIds) {
+                                null
+                            } else {
+                                { onDeleteClicked(code) }
+                            }
+
                             CodeRow(
                                 code = code,
                                 trailingIcon = QRAlarmIcons.Edit,
                                 trailingIconContentDescription = stringResource(
                                     R.string.content_description_edit_icon
                                 ),
-                                onTrailingIconClicked = { onEditClicked(code) }
+                                onTrailingIconClicked = { onEditClicked(code) },
+                                onDeleteClicked = onDelete
                             )
                         }
                     }

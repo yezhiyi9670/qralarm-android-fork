@@ -26,8 +26,6 @@ class AddOrEditAlarm @Inject constructor(
             chainedAlarms = resolvedChainedAlarms
         )
 
-        codesRepository.cleanupUnreferencedCodes()
-
         if (temporaryCustomRingtoneContentUriString == null) {
             return Result.Success(alarmId = alarmId)
         }

@@ -27,7 +27,8 @@ fun CodeRow(
     trailingIconContentDescription: String,
     onTrailingIconClicked: () -> Unit,
     modifier: Modifier = Modifier,
-    onRowClicked: (() -> Unit)? = null
+    onRowClicked: (() -> Unit)? = null,
+    onDeleteClicked: (() -> Unit)? = null
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -61,6 +62,16 @@ fun CodeRow(
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+
+        if (onDeleteClicked != null) {
+            IconButton(onClick = onDeleteClicked) {
+                Icon(
+                    imageVector = QRAlarmIcons.Delete,
+                    contentDescription =
+                        stringResource(R.string.content_description_delete_icon)
                 )
             }
         }

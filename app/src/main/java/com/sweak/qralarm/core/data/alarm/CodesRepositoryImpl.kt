@@ -53,17 +53,17 @@ class CodesRepositoryImpl @Inject constructor(
             if (name != null) updateCodeName(id, name)
             preferencesDataSource.setDefaultAlarmCodeId(id)
         }
-        cleanupUnreferencedCodes()
     }
 
     override suspend fun setDefaultAlarmCodeById(codeId: Long?) {
         preferencesDataSource.setDefaultAlarmCodeId(codeId)
-        cleanupUnreferencedCodes()
     }
 
-    override suspend fun cleanupUnreferencedCodes() {
-        val defaultCodeId = preferencesDataSource.getDefaultAlarmCodeId().first()
-        codesDao.deleteUnreferencedCodes(defaultCodeId)
+    override fun getAssignedCodeIdsFlow(): Flow<List<Long>> =
+        codesDao.getAssignedCodeIds()
+
+    override suspend fun deleteCode(codeId: Long) {
+        codesDao.deleteCode(codeId)
     }
 
     override suspend fun migrateLegacyDefaultAlarmCode() {
