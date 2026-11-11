@@ -1296,11 +1296,20 @@ class AddEditAlarmViewModel @AssistedInject constructor(
                 Alarm.RepeatingMode.Days(repeatingDaysOfWeek = repeatingDaysOfWeek)
             }
 
+        // Saving a new alarm does not arm it: an alarm that is enabled on the spot can be hard to
+        // cancel right away, since stopping it may require scanning a code. An edited alarm keeps
+        // the state it already had, so editing does not silently arm or disarm anything.
+        val isAlarmEnabled = if (idOfAlarm == 0L) {
+            false
+        } else {
+            alarmsRepository.getAlarm(alarmId = idOfAlarm)?.isAlarmEnabled == true
+        }
+
         val alarmToSave = Alarm(
             alarmId = idOfAlarm,
             alarmHourOfDay = currentState.alarmHourOfDay,
             alarmMinute = currentState.alarmMinute,
-            isAlarmEnabled = true,
+            isAlarmEnabled = isAlarmEnabled,
             isAlarmRunning = false,
             repeatingMode = repeatingMode,
             nextAlarmTimeInMillis = alarmTimeInMillis,
@@ -1370,14 +1379,18 @@ class AddEditAlarmViewModel @AssistedInject constructor(
 
         qrAlarmManager.cancelUpcomingAlarmNotification(alarmId = alarmId)
 
-        val setAlarmResult = setAlarm(
-            alarmId = alarmId,
-            isReschedulingMissedAlarm = false
-        )
+        if (alarmToSave.isAlarmEnabled) {
+            val setAlarmResult = setAlarm(
+                alarmId = alarmId,
+                isReschedulingMissedAlarm = false
+            )
 
-        if (setAlarmResult is SetAlarm.Result.Success) {
-            backendEventsChannel.send(AddEditAlarmFlowBackendEvent.AlarmSaved)
+            if (setAlarmResult !is SetAlarm.Result.Success) {
+                return
+            }
         }
+
+        backendEventsChannel.send(AddEditAlarmFlowBackendEvent.AlarmSaved)
     }
 
     private fun computeNextAlarmTimeInMillis(
