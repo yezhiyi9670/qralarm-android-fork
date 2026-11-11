@@ -15,6 +15,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +37,9 @@ class AlarmViewModel @AssistedInject constructor(
     private lateinit var alarm: Alarm
     private var isAlarmBeingStopped: Boolean = false
     private var activeChainedAlarmId: Long? = null
+    private var currentAlarmId: Long = idOfAlarm
+    private var isTransientMode: Boolean = isTransient
+    private var alarmObservationJob: Job? = null
 
     @AssistedFactory
     interface Factory {
@@ -49,8 +53,30 @@ class AlarmViewModel @AssistedInject constructor(
     val backendEvents = backendEventsChannel.receiveAsFlow()
 
     init {
-        viewModelScope.launch {
-            alarmsRepository.getAlarmFlow(alarmId = idOfAlarm).collect {
+        observeAlarm(alarmId = currentAlarmId)
+    }
+
+    /**
+     * Called when the screen is handed over to another alarm that started ringing while this
+     * [ViewModel] was already alive.
+     */
+    fun onAlarmChanged(alarmId: Long, isTransientScreen: Boolean) {
+        isTransientMode = isTransientScreen
+
+        if (currentAlarmId == alarmId) return
+
+        currentAlarmId = alarmId
+        isAlarmBeingStopped = false
+        activeChainedAlarmId = null
+        _state.value = AlarmScreenState()
+
+        observeAlarm(alarmId = alarmId)
+    }
+
+    private fun observeAlarm(alarmId: Long) {
+        alarmObservationJob?.cancel()
+        alarmObservationJob = viewModelScope.launch {
+            alarmsRepository.getAlarmFlow(alarmId = alarmId).collect {
                 alarm = it
                 it.chainedAlarms.firstOrNull { chainedAlarm ->
                     chainedAlarm.nextChainedAlarmTimeInMillis != null
@@ -62,7 +88,7 @@ class AlarmViewModel @AssistedInject constructor(
                     val isAlarmSnoozed = it.snoozeConfig.isAlarmSnoozed
                     val isSnoozeAvailable = it.isSnoozeAvailable()
                     val isAlarmRunning = it.isAlarmRunning
-                    val isInteractionEnabled = isAlarmRunning || (isAlarmSnoozed && !isTransient)
+                    val isInteractionEnabled = isAlarmRunning || (isAlarmSnoozed && !isTransientMode)
                     val activeChainedAlarm = it.chainedAlarms.firstOrNull { chainedAlarm ->
                         chainedAlarm.chainedAlarmId == activeChainedAlarmId
                     }
@@ -127,7 +153,7 @@ class AlarmViewModel @AssistedInject constructor(
                     viewModelScope.launch {
                         isAlarmBeingStopped = true
                         alarmsRepository.setAlarmSnoozed(
-                            alarmId = idOfAlarm,
+                            alarmId = currentAlarmId,
                             snoozed = false
                         )
                         handleAlarmRescheduling()
@@ -205,11 +231,11 @@ class AlarmViewModel @AssistedInject constructor(
             is AlarmScreenUserEvent.SnoozeAlarmClicked -> {
                 viewModelScope.launch {
                     _state.update { currentState ->
-                        currentState.copy(isInteractionEnabled = !isTransient)
+                        currentState.copy(isInteractionEnabled = !isTransientMode)
                     }
 
                     val result = snoozeAlarm(
-                        alarmId = idOfAlarm,
+                        alarmId = currentAlarmId,
                         isReschedulingCurrentOrMissedSnooze = false
                     )
 

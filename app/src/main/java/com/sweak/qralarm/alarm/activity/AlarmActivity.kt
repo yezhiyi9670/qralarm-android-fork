@@ -13,6 +13,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.core.net.toUri
 import androidx.fragment.app.FragmentActivity
@@ -51,6 +53,8 @@ class AlarmActivity : FragmentActivity() {
     lateinit var userDataRepository: UserDataRepository
 
     private var isLaunchedFromMainActivity: Boolean = false
+    private val alarmIdState = mutableStateOf(0L)
+    private var isStoppingAlarm: Boolean = false
     private var lastNavigateUpTime: Long = 0L
 
     @Suppress("DEPRECATION")
@@ -71,83 +75,53 @@ class AlarmActivity : FragmentActivity() {
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        val alarmId = intent.extras?.getLong(EXTRA_ALARM_ID) ?: 0
+        alarmIdState.value = intent.extras?.getLong(EXTRA_ALARM_ID) ?: 0L
         isLaunchedFromMainActivity =
             intent.extras?.getBoolean(EXTRA_LAUNCHED_FROM_MAIN_ACTIVITY) == true
 
+        // The service is a singleton, so this screen has to follow the alarm that is actually
+        // ringing - a new alarm may take over without its intent ever reaching this instance:
+        lifecycleScope.launch {
+            AlarmService.ringingAlarmId.collect { ringingAlarmId ->
+                if (isStoppingAlarm) return@collect
+
+                if (ringingAlarmId == null) {
+                    // Nothing rings anymore, so a screen opened by the alarm itself has nothing
+                    // left to show. The one opened from the main activity may present a snoozed
+                    // alarm, so it is left to its opener:
+                    if (!isLaunchedFromMainActivity) {
+                        finish()
+                    }
+                } else if (ringingAlarmId != alarmIdState.value) {
+                    alarmIdState.value = ringingAlarmId
+                }
+            }
+        }
+
         setContent {
             val theme by userDataRepository.theme.collectAsStateWithLifecycle(Theme.Default)
+            val alarmId by alarmIdState
 
             QRAlarmTheme(theme = theme) {
-                val startRoute = AlarmRoute(idOfAlarm = alarmId)
+                key(alarmId) {
+                    val startRoute = AlarmRoute(idOfAlarm = alarmId)
 
-                val navigationState = rememberNavigationState(
-                    startRoute = startRoute,
-                    topLevelRoutes = setOf(startRoute)
-                )
-                val navigator = remember {
-                    Navigator(navigationState)
-                }
-
-                val alarmEntryProvider = entryProvider {
-                    entry<AlarmRoute> { route ->
-                        AlarmScreen(
-                            idOfAlarm = route.idOfAlarm,
-                            isTransient = !isLaunchedFromMainActivity,
-                            onStopAlarm = {
-                                lifecycleScope.launch {
-                                    stopService(alarmId = alarmId)
-                                    finish()
-
-                                    if (isLaunchedFromMainActivity) {
-                                        startActivity(
-                                            Intent(
-                                                this@AlarmActivity,
-                                                MainActivity::class.java
-                                            )
-                                        )
-                                    }
-                                }
-                            },
-                            onRequestCodeScan = {
-                                navigator.navigate(
-                                    DisableAlarmScannerRoute(
-                                        idOfAlarm = alarmId,
-                                        isDisablingBeforeAlarmFired = false
-                                    )
-                                )
-                            },
-                            onSnoozeAlarm = {
-                                lifecycleScope.launch {
-                                    stopService(alarmId = alarmId)
-
-                                    if (!isLaunchedFromMainActivity) {
-                                        delay(ALARM_CONFIRMATION_DISPLAY_DURATION)
-                                        finish()
-                                    }
-                                }
-                            },
-                            onEmergencyClicked = {
-                                navigator.navigate(
-                                    EmergencyRoute(
-                                        idOfAlarmToCancel = alarmId
-                                    )
-                                )
-                            }
-                        )
+                    val navigationState = rememberNavigationState(
+                        startRoute = startRoute,
+                        topLevelRoutes = setOf(startRoute)
+                    )
+                    val navigator = remember {
+                        Navigator(navigationState)
                     }
 
-                    entry<DisableAlarmScannerRoute> { route ->
-                        DisableAlarmScannerScreen(
-                            idOfAlarm = route.idOfAlarm,
-                            isDisablingBeforeAlarmFired = route.isDisablingBeforeAlarmFired,
-                            onAlarmDisabled = { uriStringToTryToOpen ->
-                                if (uriStringToTryToOpen == null) {
+                    val alarmEntryProvider = entryProvider {
+                        entry<AlarmRoute> { route ->
+                            AlarmScreen(
+                                idOfAlarm = route.idOfAlarm,
+                                isTransient = !isLaunchedFromMainActivity,
+                                onStopAlarm = {
                                     lifecycleScope.launch {
-                                        stopService(alarmId)
-
-                                        navigator.goBack()
-                                        delay(ALARM_CONFIRMATION_DISPLAY_DURATION)
+                                        stopService(alarmId = alarmId)
                                         finish()
 
                                         if (isLaunchedFromMainActivity) {
@@ -159,138 +133,193 @@ class AlarmActivity : FragmentActivity() {
                                             )
                                         }
                                     }
-                                } else {
-                                    var uri = uriStringToTryToOpen
+                                },
+                                onRequestCodeScan = {
+                                    navigator.navigate(
+                                        DisableAlarmScannerRoute(
+                                            idOfAlarm = alarmId,
+                                            isDisablingBeforeAlarmFired = false
+                                        )
+                                    )
+                                },
+                                onSnoozeAlarm = {
+                                    lifecycleScope.launch {
+                                        stopService(alarmId = alarmId)
 
-                                    if (!uriStringToTryToOpen.startsWith("http://") &&
-                                        !uriStringToTryToOpen.startsWith("https://")
-                                    ) {
-                                        uri = "http://$uri"
+                                        if (!isLaunchedFromMainActivity) {
+                                            delay(ALARM_CONFIRMATION_DISPLAY_DURATION)
+                                            finish()
+                                        }
                                     }
+                                },
+                                onEmergencyClicked = {
+                                    navigator.navigate(
+                                        EmergencyRoute(
+                                            idOfAlarmToCancel = alarmId
+                                        )
+                                    )
+                                }
+                            )
+                        }
 
-                                    val keyguardManager =
-                                        getSystemService(KEYGUARD_SERVICE) as KeyguardManager
+                        entry<DisableAlarmScannerRoute> { route ->
+                            DisableAlarmScannerScreen(
+                                idOfAlarm = route.idOfAlarm,
+                                isDisablingBeforeAlarmFired = route.isDisablingBeforeAlarmFired,
+                                onAlarmDisabled = { uriStringToTryToOpen ->
+                                    if (uriStringToTryToOpen == null) {
+                                        lifecycleScope.launch {
+                                            stopService(alarmId)
 
-                                    if (keyguardManager.isKeyguardSecure &&
-                                        keyguardManager.isDeviceLocked
-                                    ) {
-                                        keyguardManager.requestDismissKeyguard(
-                                            this@AlarmActivity,
-                                            object :
-                                                KeyguardManager.KeyguardDismissCallback() {
-                                                override fun onDismissSucceeded() {
-                                                    super.onDismissSucceeded()
+                                            navigator.goBack()
+                                            delay(ALARM_CONFIRMATION_DISPLAY_DURATION)
+                                            finish()
 
-                                                    lifecycleScope.launch {
-                                                        stopService(alarmId = alarmId)
-                                                        finish()
+                                            if (isLaunchedFromMainActivity) {
+                                                startActivity(
+                                                    Intent(
+                                                        this@AlarmActivity,
+                                                        MainActivity::class.java
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        var uri = uriStringToTryToOpen
 
-                                                        try {
-                                                            startActivity(
-                                                                Intent(
-                                                                    Intent.ACTION_VIEW,
-                                                                    uri.toUri()
-                                                                )
-                                                            )
-                                                        } catch (_: Exception) {
-                                                            if (isLaunchedFromMainActivity) {
+                                        if (!uriStringToTryToOpen.startsWith("http://") &&
+                                            !uriStringToTryToOpen.startsWith("https://")
+                                        ) {
+                                            uri = "http://$uri"
+                                        }
+
+                                        val keyguardManager =
+                                            getSystemService(KEYGUARD_SERVICE) as KeyguardManager
+
+                                        if (keyguardManager.isKeyguardSecure &&
+                                            keyguardManager.isDeviceLocked
+                                        ) {
+                                            keyguardManager.requestDismissKeyguard(
+                                                this@AlarmActivity,
+                                                object :
+                                                    KeyguardManager.KeyguardDismissCallback() {
+                                                    override fun onDismissSucceeded() {
+                                                        super.onDismissSucceeded()
+
+                                                        lifecycleScope.launch {
+                                                            stopService(alarmId = alarmId)
+                                                            finish()
+
+                                                            try {
                                                                 startActivity(
                                                                     Intent(
-                                                                        this@AlarmActivity,
-                                                                        MainActivity::class.java
+                                                                        Intent.ACTION_VIEW,
+                                                                        uri.toUri()
                                                                     )
                                                                 )
+                                                            } catch (_: Exception) {
+                                                                if (isLaunchedFromMainActivity) {
+                                                                    startActivity(
+                                                                        Intent(
+                                                                            this@AlarmActivity,
+                                                                            MainActivity::class.java
+                                                                        )
+                                                                    )
+                                                                }
                                                             }
                                                         }
                                                     }
-                                                }
 
-                                                override fun onDismissCancelled() {
-                                                    navigator.goBack()
+                                                    override fun onDismissCancelled() {
+                                                        navigator.goBack()
+                                                    }
                                                 }
-                                            }
-                                        )
-                                    } else {
-                                        lifecycleScope.launch {
-                                            stopService(alarmId = alarmId)
-                                            finish()
+                                            )
+                                        } else {
+                                            lifecycleScope.launch {
+                                                stopService(alarmId = alarmId)
+                                                finish()
 
-                                            try {
-                                                startActivity(
-                                                    Intent(
-                                                        Intent.ACTION_VIEW,
-                                                        uri.toUri()
-                                                    )
-                                                )
-                                            } catch (_: Exception) {
-                                                if (isLaunchedFromMainActivity) {
+                                                try {
                                                     startActivity(
                                                         Intent(
-                                                            this@AlarmActivity,
-                                                            MainActivity::class.java
+                                                            Intent.ACTION_VIEW,
+                                                            uri.toUri()
                                                         )
                                                     )
+                                                } catch (_: Exception) {
+                                                    if (isLaunchedFromMainActivity) {
+                                                        startActivity(
+                                                            Intent(
+                                                                this@AlarmActivity,
+                                                                MainActivity::class.java
+                                                            )
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
                                     }
-                                }
-                            },
-                            onCloseClicked = {
-                                val currentTimeMillis = System.currentTimeMillis()
+                                },
+                                onCloseClicked = {
+                                    val currentTimeMillis = System.currentTimeMillis()
 
-                                if (lastNavigateUpTime + 3000L <= currentTimeMillis) {
-                                    lastNavigateUpTime = currentTimeMillis
-                                    navigator.goBack()
-                                }
-                            }
-                        )
-                    }
-
-                    entry<EmergencyRoute> { route ->
-                        EmergencyScreen(
-                            idOfAlarmToCancel = route.idOfAlarmToCancel,
-                            onCloseClicked = {
-                                val currentTimeMillis = System.currentTimeMillis()
-
-                                if (lastNavigateUpTime + 3000L <= currentTimeMillis) {
-                                    lastNavigateUpTime = currentTimeMillis
-                                    navigator.goBack()
-                                }
-                            },
-                            onEmergencyTaskCompleted = {
-                                lifecycleScope.launch {
-                                    stopService(alarmId = alarmId)
-                                    finish()
-
-                                    if (isLaunchedFromMainActivity) {
-                                        startActivity(
-                                            Intent(
-                                                this@AlarmActivity,
-                                                MainActivity::class.java
-                                            )
-                                        )
+                                    if (lastNavigateUpTime + 3000L <= currentTimeMillis) {
+                                        lastNavigateUpTime = currentTimeMillis
+                                        navigator.goBack()
                                     }
                                 }
-                            }
-                        )
-                    }
-                }
+                            )
+                        }
 
-                NavDisplay(
-                    entries = navigationState.toEntries(
-                        entryProvider = { alarmEntryProvider(it) }
-                    ),
-                    onBack = { navigator.goBack() },
-                    transitionSpec = { fadeIn() togetherWith ExitTransition.None },
-                    popTransitionSpec = { EnterTransition.None togetherWith fadeOut() },
-                    predictivePopTransitionSpec = { EnterTransition.None togetherWith fadeOut() }
-                )
+                        entry<EmergencyRoute> { route ->
+                            EmergencyScreen(
+                                idOfAlarmToCancel = route.idOfAlarmToCancel,
+                                onCloseClicked = {
+                                    val currentTimeMillis = System.currentTimeMillis()
+
+                                    if (lastNavigateUpTime + 3000L <= currentTimeMillis) {
+                                        lastNavigateUpTime = currentTimeMillis
+                                        navigator.goBack()
+                                    }
+                                },
+                                onEmergencyTaskCompleted = {
+                                    lifecycleScope.launch {
+                                        stopService(alarmId = alarmId)
+                                        finish()
+
+                                        if (isLaunchedFromMainActivity) {
+                                            startActivity(
+                                                Intent(
+                                                    this@AlarmActivity,
+                                                    MainActivity::class.java
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    }
+
+                    NavDisplay(
+                        entries = navigationState.toEntries(
+                            entryProvider = { alarmEntryProvider(it) }
+                        ),
+                        onBack = { navigator.goBack() },
+                        transitionSpec = { fadeIn() togetherWith ExitTransition.None },
+                        popTransitionSpec = { EnterTransition.None togetherWith fadeOut() },
+                        predictivePopTransitionSpec = { EnterTransition.None togetherWith fadeOut() }
+                    )
+                }
             }
         }
     }
 
     private suspend fun stopService(alarmId: Long) {
+        // The screen is closed by the caller, so the missing alarm below is expected:
+        isStoppingAlarm = true
+
         alarmsRepository.setAlarmRunning(
             alarmId = alarmId,
             running = false
@@ -305,6 +334,15 @@ class AlarmActivity : FragmentActivity() {
 
         isLaunchedFromMainActivity =
             intent.extras?.getBoolean(EXTRA_LAUNCHED_FROM_MAIN_ACTIVITY) == true
+
+        val newAlarmId = intent.extras?.getLong(EXTRA_ALARM_ID) ?: 0L
+
+        // launchMode is singleTop, so this instance is reused for another alarm, while the whole
+        // navigation was built for the previous one:
+        if (newAlarmId != alarmIdState.value) {
+            setIntent(intent)
+            alarmIdState.value = newAlarmId
+        }
     }
 
     companion object {

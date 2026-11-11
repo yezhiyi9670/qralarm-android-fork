@@ -3,6 +3,7 @@ package com.sweak.qralarm.alarm.service
 import android.annotation.SuppressLint
 import android.app.ForegroundServiceStartNotAllowedException
 import android.app.Notification
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
@@ -37,6 +38,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -123,6 +127,18 @@ class AlarmService : Service() {
                 return@run 0
             } else {
                 return@run this
+            }
+        }
+
+        if (!shouldStopService) {
+            val previousRingingAlarmId = _ringingAlarmId.value
+
+            // Claimed before the notification is posted, so that the screen the notification
+            // launches can tell whether it still belongs to the alarm that is ringing:
+            _ringingAlarmId.value = alarmId
+
+            if (previousRingingAlarmId != null && previousRingingAlarmId != alarmId) {
+                handlePreviousAlarmTakeover(previousAlarmId = previousRingingAlarmId)
             }
         }
 
@@ -264,7 +280,25 @@ class AlarmService : Service() {
         }
     }
 
+    private fun handlePreviousAlarmTakeover(previousAlarmId: Long) {
+        // The superseded notification is ongoing and still carries a full screen intent, so
+        // leaving it posted can put the alarm that is not ringing anymore back on the screen:
+        (getSystemService(NOTIFICATION_SERVICE) as? NotificationManager)
+            ?.cancel(previousAlarmId.toInt())
+
+        serviceScope.launch {
+            alarmsRepository.setAlarmRunning(
+                alarmId = previousAlarmId,
+                running = false
+            )
+        }
+    }
+
     private suspend fun handleEarlyServiceStop(alarmId: Long) {
+        if (_ringingAlarmId.value == alarmId) {
+            _ringingAlarmId.value = null
+        }
+
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         qrAlarmManager.cancelUpcomingAlarmNotification(alarmId = alarmId)
 
@@ -391,6 +425,7 @@ class AlarmService : Service() {
 
     override fun onDestroy() {
         isRunning = false
+        _ringingAlarmId.value = null
 
         temporaryAlarmMuteJob?.cancel()
         emergencyTaskAlarmMuteJob?.cancel()
@@ -429,6 +464,11 @@ class AlarmService : Service() {
         const val EMERGENCY_TASK_ALARM_MUTE_DURATION_SECONDS = 10
 
         var isRunning = false
+
+        private val _ringingAlarmId = MutableStateFlow<Long?>(null)
+
+        /** The alarm that is ringing right now, or `null` when nothing is ringing. */
+        val ringingAlarmId: StateFlow<Long?> = _ringingAlarmId.asStateFlow()
 
         private const val ABNORMAL_LAUNCH_TOLERANCE_MS = 10 * 60 * 1000L
         private const val EARLY_LAUNCH_TOLERANCE_MS = 5 * 1000L
